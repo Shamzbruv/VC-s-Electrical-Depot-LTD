@@ -1,0 +1,1 @@
+import {Header,Footer} from '../../components/ui';import Track from './track';export const metadata={title:'Track your order'};export default function Page(){return <><Header/><main className="wrap account-page"><Track/></main><Footer/></>}

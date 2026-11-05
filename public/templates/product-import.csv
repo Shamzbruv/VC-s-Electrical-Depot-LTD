@@ -1,0 +1,2 @@
+name,sku,slug,category,online_price_jmd,store_price_jmd,stock,unit,description,image
+Example product,REPLACE-SKU,replace-product-slug,Cables & Wires,1250.00,1300.00,0,each,Replace with approved catalog details,/products/cable.svg
