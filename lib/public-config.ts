@@ -1,0 +1,2 @@
+// Public Supabase anonymous key. Never place the service-role key in this file.
+export const SB_PUBLIC_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmaWFzZWRjaW5ycmlrd2tiYmViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM4ODEwNjIsImV4cCI6MjEwOTQ1NzA2Mn0.Am7vuSJVz60sOelnz-aAzdnbLZAG8yrMxiihaahkFXc";
