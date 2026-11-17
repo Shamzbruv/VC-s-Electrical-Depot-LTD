@@ -30,9 +30,10 @@ export default function WebsiteContent() {
       for(const [element,{id,original,parts,baseline}] of records){
         const update=(id.startsWith('shared-')?shared:main)[id]||{};
         if(parts.length){
-          if(typeof update.text==='string'){
-            const lines=update.text.split('\n');
-            parts.forEach((part,index)=>{part.data=lines.length===parts.length?lines[index]:index===0?update.text:'';});
+          const editedText=update.text;
+          if(typeof editedText==='string'){
+            const lines=editedText.split('\n');
+            parts.forEach((part,index)=>{part.data=lines.length===parts.length?lines[index]:index===0?editedText:'';});
           } else parts.forEach((part,index)=>{part.data=baseline[index];});
         }
         if(typeof original.href==='string')element.setAttribute('href',typeof update.href==='string'&&websiteUrl(update.href)?update.href:original.href);
