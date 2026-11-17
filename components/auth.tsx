@@ -1,3 +1,63 @@
-'use client';import {useEffect,useState} from 'react';import {api,ArrowRight} from './ui';import {SB_URL,money} from '../lib/config';
-export function getSession(){try{return JSON.parse(sessionStorage.getItem('vc-session')||'null')}catch{return null}}
-export default function Auth({admin=false,onLogin}:{admin?:boolean,onLogin?:()=>void}){const [mode,setMode]=useState('auth'),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[session,setSession]=useState<any>(null),[orders,setOrders]=useState<any[]>([]);useEffect(()=>{const h=new URLSearchParams(location.hash.slice(1));let s=getSession();if(h.get('access_token')){s={access_token:h.get('access_token'),refresh_token:h.get('refresh_token')};sessionStorage.setItem('vc-session',JSON.stringify(s));if(h.get('type')==='recovery')setMode('new_password');history.replaceState(null,'',location.pathname)}setSession(s);if(s&&!admin)api('account',undefined,s.access_token).then(d=>setOrders(d.orders||[])).catch(()=>{})},[admin]);if(session&&!admin&&mode!=='new_password')return <section className="form-card"><span className="eyebrow">YOUR ACCOUNT</span><h1>Welcome back.</h1><p>{session.user?.email}</p><h3>Your online orders</h3>{orders.length?orders.map(o=><div key={o.id} className="record-row"><b>VC-{o.number}</b><span>{o.status.replaceAll('_',' ')}</span><b>{money(o.total)}</b></div>):<p>No orders to display. Use your secure tracking link to view a guest order.</p>}<a className="button blue" href="/shop">Explore the depot →</a><button className="text-button" onClick={()=>{sessionStorage.removeItem('vc-session');setSession(null)}}>Sign out</button></section>;return <form className="form-card auth-card" onSubmit={async e=>{e.preventDefault();setBusy(true);setMessage('');const f=Object.fromEntries(new FormData(e.currentTarget));try{const d=await api(mode==='new_password'?'update_password':mode,f,mode==='new_password'?getSession()?.access_token:undefined);if(mode==='new_password'){setMode('auth');setMessage('Password updated. You can now sign in.');return;}if(mode==='auth'){sessionStorage.setItem('vc-session',JSON.stringify(d));setSession(d);if(onLogin)onLogin()}else setMessage(mode==='signup'?'Check your email to confirm your account.':'If an account exists, a reset link has been requested.')}catch(e:any){setMessage(e.message)}finally{setBusy(false)}}}><span className="eyebrow">{admin?'STAFF ACCESS':'WELCOME TO THE DEPOT'}</span><h1>{mode==='new_password'?'Choose a new password.':mode==='reset'?'Reset your password.':mode==='signup'?'Make yourself at home.':admin?'Your store. In control.':'Good to see you.'}</h1><p>{admin?'Sign in with your assigned Supabase staff account.':'Sign in to manage your account and orders.'}</p>{mode!=='new_password'&&<label className="field">Email address<input name="email" type="email" required autoComplete="email"/></label>}{mode!=='reset'&&<label className="field">Password<input name="password" type="password" required minLength={8} autoComplete={mode==='signup'?'new-password':'current-password'}/></label>}<button className="button blue" disabled={busy}>{busy?'Please wait…':mode==='new_password'?'Save new password':mode==='reset'?'Request reset link':mode==='signup'?'Create account':'Sign in'} <ArrowRight size={18}/></button>{message&&<p className="notice" role="status">{message}</p>}<div className="auth-links"><button type="button" onClick={()=>setMode(mode==='reset'?'auth':'reset')}>{mode==='reset'?'Back to sign in':'Forgot password?'}</button>{!admin&&<button type="button" onClick={()=>setMode(mode==='signup'?'auth':'signup')}>{mode==='signup'?'Already have an account?':'Create an account'}</button>}</div>{admin&&<div className="notice">Staff access is invite-only. Your account must have an assigned role. No default password is created.</div>}</form>}
+'use client';
+
+import {useEffect,useState} from 'react';
+import {api,ArrowRight} from './ui';
+
+type Mode='auth'|'reset'|'activate'|'new_password';
+export function getSession(){try{return JSON.parse(sessionStorage.getItem('vc-session')||'null');}catch{return null;}}
+export function authFragment(){return new URLSearchParams(window.location.hash.slice(1));}
+
+export default function Auth({onLogin}:{onLogin:()=>void}) {
+  const [mode,setMode]=useState<Mode>('auth');
+  const [message,setMessage]=useState('');
+  const [failed,setFailed]=useState(false);
+  const [busy,setBusy]=useState(false);
+  const [setup,setSetup]=useState<{token_hash:string;type:string}>();
+  useEffect(()=>{
+    const fragment=authFragment();
+    const token=fragment.get('access_token');
+    const type=fragment.get('type');
+    const hash=fragment.get('token_hash');
+    if(hash&&['invite','recovery','magiclink','email'].includes(type||'')){
+      setSetup({token_hash:hash,type:type!});setMode('new_password');
+    }
+    if(token){
+      sessionStorage.setItem('vc-session',JSON.stringify({access_token:token,refresh_token:fragment.get('refresh_token'),expires_at:Number(fragment.get('expires_at'))||undefined}));
+      if(type==='recovery'||type==='invite')setMode('new_password');
+      else onLogin();
+    }
+    if(fragment.has('error_description')){
+      setMessage(fragment.get('error_description')||'Request a new sign-in link.');setFailed(true);
+    }
+    if(token||fragment.has('error'))history.replaceState(null,'',location.pathname+location.search);
+  },[onLogin]);
+  const titles={auth:'Welcome back.',reset:'Reset your password.',activate:'Activate your staff account.',new_password:'Choose a new password.'};
+  const buttons={auth:'Sign in',reset:'Request reset link',activate:'Send activation link',new_password:'Save password'};
+  function changeMode(next:Mode){setMode(next);setMessage('');setFailed(false);}
+  return <form className="form-card auth-card" onSubmit={async e=>{
+    e.preventDefault();setBusy(true);setMessage('');setFailed(false);
+    const form=Object.fromEntries(new FormData(e.currentTarget));
+    try{
+      if(mode==='new_password'&&setup){
+        const session=await api('staff_verify',setup);
+        sessionStorage.setItem('vc-session',JSON.stringify(session));
+        setSetup(undefined);
+        history.replaceState(null,'',location.pathname+location.search);
+      }
+      const result=await api(mode==='new_password'?'update_password':mode,form,mode==='new_password'?getSession()?.access_token:undefined);
+      if(mode==='auth'){sessionStorage.setItem('vc-session',JSON.stringify(result));onLogin();}
+      if(mode==='new_password'){sessionStorage.removeItem('vc-session');setMode('auth');setMessage('Password updated. Sign in with your new password.');}
+      if(mode==='reset')setMessage('If your account exists, check your email for the reset link.');
+      if(mode==='activate')setMessage('If your email is approved, check your inbox for the activation link.');
+    }catch(error){setFailed(true);setMessage(error instanceof Error?error.message:'Sign-in failed.');}
+    finally{setBusy(false);}
+  }}>
+    <span className="eyebrow">VC’S ELECTRICAL · STAFF</span><h1>{titles[mode]}</h1>
+    <p>{mode==='activate'?'Use the email address approved by the owner.':'Access the staff workspaces assigned to you.'}</p>
+    {mode!=='new_password'&&<label className="field">Email address<input name="email" type="email" required autoComplete="email"/></label>}
+    {mode!=='reset'&&<label className="field">Password<input key={mode} name="password" type="password" required minLength={mode==='auth'?1:10} autoComplete={mode==='auth'?'current-password':'new-password'}/></label>}
+    <button className="button blue" disabled={busy}>{busy?'Please wait…':buttons[mode]} <ArrowRight size={18}/></button>
+    {message&&<p className="notice" role={failed?'alert':'status'}>{message}</p>}
+    <div className="auth-links">{mode==='auth'?<><button type="button" onClick={()=>changeMode('reset')}>Forgot password?</button><button type="button" onClick={()=>changeMode('activate')}>Activate account</button></>:<button type="button" onClick={()=>changeMode('auth')}>Back to sign in</button>}</div>
+  </form>;
+}

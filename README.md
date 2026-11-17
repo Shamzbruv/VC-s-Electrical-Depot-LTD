@@ -1,21 +1,19 @@
 # VC’s Electrical Depot LTD
 
-Private staging storefront and e-commerce control panel. Built with the Sites Vinext starter, React, TypeScript and a dedicated Supabase project.
+Public electrical supply and contracting site, backed by Supabase. Customers can browse products selected for publication, submit enquiries and request a bulk quotation.
 
-- `app/`: storefront, customer and admin pages; server API routes.
-- `lib/`: database authorization, money display, CSV validation and PDF output.
-- `supabase/migrations/`: applied schema and transaction functions.
-- `supabase/seed.sql`: clearly labelled staging samples, blocked from purchase.
-- `tests/`: transaction, promotion, CSV and concurrency assertions.
-- `docs/implementation-status.md`: honest implementation limits, setup and operator notes.
-- `docs/validation.md`: checks and verification limits.
+The staff portal is at `/admin`. It includes accounting and JMD reporting, dispatch, a mobile driver workspace, enquiries, private product management, a visual website editor and role-based staff access.
 
-Configure the three Supabase variables documented in `.env.example` through hosting secrets. Keep the service-role key on the server. Local secrets belong only in ignored `.dev.vars`.
+## Deployment
 
-Staff accounts require a verified Supabase Auth user and a separately assigned `staff_roles` record. There is no default admin password. See the handover notes for bootstrap and permissions.
+Railway builds and deploys from the GitHub `main` branch. Use `pnpm run build:railway` for a production build and `pnpm start` to serve it. The web application uses the Supabase publishable key and authenticated staff JWTs. The Supabase service key stays inside the staff setup Edge Function.
 
-Validation: `node node_modules/typescript/bin/tsc --noEmit` and `node --experimental-strip-types --test tests/import.test.mjs`. Build using the Sites build helper. SQL tests run inside rolled-back transactions against staging. The concurrency script creates disposable staging records and restores configuration in a finally block; do not run it against a live merchant store.
+Run the Supabase migrations in order for an uninitialized project. Deploy `vc-staff-setup` from `supabase/functions` with gateway JWT verification disabled. The function verifies the user with Supabase Auth and authorizes the owner through the staff permissions RPC before generating a setup link.
 
-Private deployment: https://vcs-electrical-depot.shamzbruv.chatgpt.site
+Bootstrap the first owner using an explicitly confirmed email. Approve the address in `staff_activation` with role `owner` and `active=true`, then generate a one-time invite link from Supabase. If a verified Auth user already exists, assign the `owner` role to its user ID in `staff_roles`. From then on the owner can approve staff and generate one-time links in the portal.
 
-This is not an approved live-payment release. Merchant gateway, email sending, business/legal data, real catalog and full blueprint acceptance require the inputs and remaining work recorded in the handover.
+Drivers share location during an accepted delivery while their phone browser can provide updates. Dispatch displays the most recent position and its timestamp. Delivering, cancelling or reporting an issue removes the stored position. Status changes and staff notifications are retained.
+
+## Checks
+
+Run `pnpm exec tsc --noEmit` and `pnpm run build:railway`. Test delivery GPS using an HTTPS deployment and the phone's location permission. Staff setup, role assignment, products and draft publishing all require an authenticated test session.

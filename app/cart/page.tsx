@@ -1,1 +1,2 @@
-import {Header,Footer} from '../../components/ui';import Cart from './cart';import {catalog} from '../../lib/catalog';export const dynamic='force-dynamic';export const metadata={title:'Your cart'};export default async function Page(){return <><Header/><Cart products={await catalog()}/><Footer/></>}
+import {redirect} from 'next/navigation';
+export default function Page(){redirect('/quotes');}

@@ -1,1 +1,2 @@
-import {Header,Footer} from '../../components/ui';import Auth from '../../components/auth';export const metadata={title:'My account'};export default function Page(){return <><Header/><main className="wrap account-page"><Auth/></main><Footer/></>}
+import {redirect} from 'next/navigation';
+export default function Page(){redirect('/quotes');}
