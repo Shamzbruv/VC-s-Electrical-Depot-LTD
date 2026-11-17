@@ -2,7 +2,8 @@
 
 import {useState} from 'react';
 import {parseCSV} from '../../lib/import';
-import {ops,permissionLabels,roles,type Permission} from '../../lib/ops-client';
+import {defaultPermissions as defaults,permissionLabels,roles,staffRoles,type Permission} from '../../lib/ops-client';
+import {useOps} from './portal-context';
 import {Badge,dateTime,Feedback,Field,Pager,Panel,payload,useAction,useWorkspace} from './workspace';
 
 type Item={id:string;name:string;sku:string;slug:string;category:string;description:string;image:string;unit:string;status:string;sample:boolean};
@@ -90,11 +91,7 @@ export function Enquiries() {
 }
 
 type Account={id:string;email:string;role:string|null;active:boolean|null;permissions:Permission[]|null;pending?:boolean};
-const defaults:Record<string,Permission[]>={
-  admin:['finance','finance_reports','dispatch','catalog','leads','website'],accountant:['finance','finance_reports'],dispatcher:['dispatch'],
-  driver:['drive'],catalog_editor:['catalog'],marketing_editor:['website'],reports_viewer:['finance_reports'],order_fulfillment:['dispatch'],
-};
-const assignable=Object.keys(defaults).filter(role=>role!=='order_fulfillment');
+const assignable=staffRoles.filter(role=>role!=='owner'&&role!=='order_fulfillment');
 function AccountForm({account,onSave,busy}:{account?:Account;onSave:(data:object)=>void;busy:boolean}) {
   const [role,setRole]=useState(account?.role==='order_fulfillment'?'dispatcher':account?.role||'driver');
   const [custom,setCustom]=useState(!!account?.permissions);
@@ -109,6 +106,7 @@ function AccountForm({account,onSave,busy}:{account?:Account;onSave:(data:object
   </form>;
 }
 export function StaffAccess() {
+  const {request:ops}=useOps();
   const accounts=useWorkspace<Account[]>('access');
   const action=useAction();
   const [invite,setInvite]=useState<{email:string;url:string}>();

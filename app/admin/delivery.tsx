@@ -1,7 +1,7 @@
 'use client';
 
 import {useEffect,useRef,useState} from 'react';
-import {ops} from '../../lib/ops-client';
+import {useOps} from './portal-context';
 import {Badge,dateTime,Feedback,Field,Pager,Panel,payload,today,useAction,useWorkspace} from './workspace';
 
 type Fix={latitude:number;longitude:number;accuracy:number;updated_at?:string};
@@ -71,6 +71,7 @@ export function Dispatch() {
 }
 
 export function Driver() {
+  const {request:ops,preview}=useOps();
   const [offset,setOffset]=useState(0);
   const [filter,setFilter]=useState('active');
   const list=useWorkspace<Parcel[]>('drive',{status:filter,offset},10000);
@@ -88,7 +89,7 @@ export function Driver() {
   },[activeList.data]);
   useEffect(()=>{
     const ids=JSON.parse(visible) as string[];
-    if(!ids.length){setTracking('');return;}
+    if(preview||!ids.length){setTracking('');return;}
     if(!navigator.geolocation){setTracking('Location sharing is unavailable on this browser.');return;}
     let valid=true;
     setTracking('Waiting for a location update…');
@@ -105,11 +106,12 @@ export function Driver() {
       });
     },error=>{if(valid)setTracking(locationText(error));},options);
     return ()=>{valid=false;navigator.geolocation.clearWatch(watch);};
-  },[visible]);
+  },[visible,ops,preview]);
 
   async function accept(id:string,consent:boolean) {
     setBusy(id);setFailure('');setNotice('');
     try {
+      if(preview)throw Error('Location sharing is unavailable in role preview.');
       if(!navigator.geolocation)throw Error('Use a phone browser with location services enabled.');
       const fix=await new Promise<GeolocationPosition>((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,e=>reject(Error(locationText(e))),options));
       await ops('write','drive_accept',{id,consent,...coordinates(fix)});
@@ -134,7 +136,7 @@ export function Driver() {
     } finally{setBusy('');}
   }
   return <Panel title="My deliveries" note="Allow location access when you accept a package. Keep this page visible and your phone awake during the delivery.">
-    {active.length>0&&<p className="ops-location" role="status"><b>Location sharing · {active.length} active</b><span>{tracking}</span></p>}
+    {!preview&&active.length>0&&<p className="ops-location" role="status"><b>Location sharing · {active.length} active</b><span>{tracking}</span></p>}
     <Feedback message={notice}/><Feedback message={failure||list.error||activeList.error} failed/>
     <Field title="Show deliveries"><select value={filter} onChange={e=>{setFilter(e.target.value);setOffset(0);}}><option value="active">Assigned and in progress</option><option value="delivered">Delivered</option><option value="issue">Issues</option><option value="cancelled">Cancelled</option></select></Field>
     {list.data?.map(parcel=><article className="ops-list-card" key={parcel.id}>

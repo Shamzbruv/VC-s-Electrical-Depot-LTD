@@ -5,62 +5,12 @@ import {CircleHelp,X} from 'lucide-react';
 import {useEffect,useRef,useState} from 'react';
 
 const guide:Record<string,[string,string[]]>={
-  '/':['Finding what you need',[
-    'Use Products to browse the items VC’s has chosen to show online. You can also ask about an item using its name, model number or SKU.',
-    'Use Request a bulk quote if you have a materials list, quantity or project deadline. Include your best contact details so the depot can follow up.',
-    'Use Our services or Our projects to learn about electrical contracting. Open Contact for the depot’s phone, email and location.',
-  ]],
-  '/shop':['Using the product catalogue',[
-    'Type a product name or SKU into Search. Open a result for its description and specifications.',
-    'Choose Request availability to include that product in a quote. Add the quantity, unit or size you need and mention any deadline.',
-    'If your product is missing from the catalogue, use the bulk quote form to describe it.',
-  ]],
-  '/product':['Requesting this product',[
-    'Review the product information and note the SKU. Select Request availability to start a quote with the product already filled in.',
-    'Add quantities, pack sizes, any suitable alternatives and the date you need them.',
-  ]],
-  '/quotes':['Submitting a bulk quote',[
-    'Enter your name and email. Add your company and phone so the team has another way to reach you.',
-    'List the products, quantities and any specifications. If you know your collection or delivery date or project site, include it.',
-    'Confirm that the depot may use your details to reply and submit. Keep the confirmation reference if one is shown.',
-  ]],
-  '/info/contact':['Contacting the depot',[
-    'Call or email the depot using the contact details on this page. Use the map link for directions.',
-    'Use the enquiry form for a general question and include a way for the team to reply. For a materials list or quantities, use the bulk quote form.',
-  ]],
-  '/info/services':['Asking about a service',[
-    'Review the services on this page and find the one closest to your project.',
-    'When requesting a quote, include your location, an outline of the work, the timeline and any relevant plans or specifications.',
-  ]],
-  '/info/projects':['Exploring previous projects',[
-    'Browse the project examples for an idea of the work VC’s has completed.',
-    'Mention a relevant example when enquiring about your own project and include the location and project scope.',
-  ]],
-  '/info/about':['Learning about VC’s',[
-    'Read about the depot’s history, electrical supplies and contracting work.',
-    'Open Our projects to see examples of completed work or Contact to reach the business directly.',
-  ]],
-  '/info/shipping':['Arranging delivery or collection',[
-    'Add your address and desired date to your quote request so the depot can confirm whether delivery is available.',
-    'If you prefer collection, call the depot to confirm timing and product availability before travelling.',
-  ]],
-  '/info/faq':['Finding answers',[
-    'Scan the questions for information about enquiries, bulk quotes and the depot.',
-    'Use Contact for a question specific to your project or request.',
-  ]],
-  '/info/privacy':['Understanding privacy',[
-    'Review the information the site collects when you submit an enquiry and how it is used to respond.',
-    'Contact the depot for a question about your information or to make a privacy request.',
-  ]],
-  '/info/terms':['Reviewing website terms',[
-    'Read these terms before using the site or requesting a quotation. Confirm final scope, pricing and availability with the depot.',
-    'Contact the depot for questions about a specific quotation or arrangement.',
-  ]],
   '/admin':['Using the staff portal',[
     'Sign in with your staff email and password. If the owner sent you a one-time setup link, open it and choose your password.',
     'Open the sidebar to find the tools assigned to your account. If a workspace is missing, ask the owner to update your permissions.',
     'The delivery overview counts packages awaiting delivery, in transit, delivered and cancelled. Open Dispatch to check the status, driver and delivery history of a package.',
     'Open the bell for staff notifications and mark them read after reviewing them.',
+    'Administrators and owners can open Role preview to explore each role’s workspaces with sample data.',
   ]],
   '/admin/finance':['Recording and reviewing finances',[
     'Choose Income or Expense. Enter the transaction date, amount in Jamaican dollars, category and payment method. Add the customer or supplier, reference and notes to make reconciliation easier.',
@@ -109,7 +59,7 @@ export default function PageHelp() {
   const toggle=useRef<HTMLButtonElement>(null);
   useEffect(()=>{setAvailable(window.parent===window);},[]);
   useEffect(()=>{setOpen(false);dialog.current?.close();},[path]);
-  const [heading,steps]=guide[path]||guide[path.startsWith('/product/')?'/product':path.startsWith('/admin')?'/admin':'/'];
+  const [heading,steps]=guide[path]||guide['/admin'];
   if(!available)return null;
   return <div className="page-help" data-website-ignore>
     <button ref={toggle} aria-haspopup="dialog" aria-expanded={open} onClick={()=>{dialog.current?.showModal();setOpen(true);}}><CircleHelp size={20}/> Help</button>

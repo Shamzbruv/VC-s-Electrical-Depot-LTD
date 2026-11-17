@@ -1,7 +1,7 @@
 'use client';
 
 import {useState} from 'react';
-import {ops} from '../../lib/ops-client';
+import {useOps} from './portal-context';
 import {dateTime,Feedback,Field,jmd,label,Pager,Panel,payload,Stat,today,useAction,useWorkspace} from './workspace';
 
 type Entry={id:string;entry_date:string;kind:'income'|'expense';category:string;amount_cents:number;method:string;party:string;reference:string;notes:string;created_at:string;created_by:string;voided_at?:string;void_reason?:string};
@@ -21,6 +21,7 @@ function exportReport(rows:Entry[],from:string,to:string) {
 }
 
 export default function Finance({canEnter,canReport,actor}:{canEnter:boolean;canReport:boolean;actor:string}) {
+  const {request:ops}=useOps();
   const day=today();
   const [period,setPeriod]=useState({from:day.slice(0,8)+'01',to:day});
   const [offset,setOffset]=useState(0);

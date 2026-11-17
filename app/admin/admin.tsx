@@ -1,14 +1,16 @@
 'use client';
 
 import {useCallback,useEffect,useState} from 'react';
-import {Bell,Box,ClipboardList,Globe2,LayoutDashboard,LogOut,Mail,Menu,ShieldCheck,Truck,Wallet,X} from 'lucide-react';
+import {Bell,Box,ClipboardList,Eye,Globe2,LayoutDashboard,LogOut,Mail,Menu,ShieldCheck,Truck,Wallet,X} from 'lucide-react';
 import Auth,{authFragment,getSession} from '../../components/auth';
 import {Brand} from '../../components/ui';
-import {ops,roles,type Permission,type Profile} from '../../lib/ops-client';
+import {canPreviewStaffRoles,ops,roles,staffRoles,type Permission,type Profile,type StaffRole} from '../../lib/ops-client';
 import {Enquiries,Products,StaffAccess} from './catalogue';
 import {Dispatch,Driver} from './delivery';
 import Editor from './editor';
 import Finance from './finance';
+import {PortalContext,useOps} from './portal-context';
+import {previewProfile,previewRequest} from './role-preview';
 import {dateTime,Feedback,Panel,Stat,useWorkspace} from './workspace';
 
 const sections=[
@@ -22,6 +24,9 @@ const sections=[
   {path:'access',title:'Staff permissions',icon:ShieldCheck,scopes:['access']},
 ] as const;
 const pathFor=(path:string)=>path==='overview'?'/admin':'/admin/'+path;
+const previewPath=(path:string,role?:StaffRole)=>pathFor(path)+(role?'?preview='+role:'');
+const livePortal={request:ops,preview:false};
+const samplePortal={request:previewRequest,preview:true};
 const taglines:Record<string,string>={
   overview:'See where deliveries stand and open the tools assigned to you.',
   finance:'Record income and expenses, reconcile the daily ledger and review financial activity.',
@@ -34,14 +39,15 @@ const taglines:Record<string,string>={
 };
 type Notice={id:number;message:string;created_at:string;read_at?:string};
 
-function DeliveryOverview() {
+function DeliveryOverview({link}:{link:string}) {
   const {data,error}=useWorkspace<Record<string,number>>('overview',{},15000);
   return <Panel title="Delivery overview" note="Counts cover every package in dispatch."><Feedback message={error} failed/>
     <div className="ops-stats"><Stat label="Awaiting delivery" value={data?.pending??'…'} tone="amber"/><Stat label="In transit" value={data?.in_transit??'…'}/><Stat label="Delivered" value={data?.delivered??'…'} tone="green"/><Stat label="Cancelled" value={data?.cancelled??'…'}/></div>
-    <a className="ops-link" href="/admin/dispatch">Open dispatch queue →</a>
+    <a className="ops-link" href={link}>Open dispatch queue →</a>
   </Panel>;
 }
-function Notifications({dispatch,drive}:{dispatch:boolean;drive:boolean}) {
+function Notifications({deliveriesLink}:{deliveriesLink?:string}) {
+  const {request:ops}=useOps();
   const notices=useWorkspace<Notice[]>('notifications',{},12000);
   const [open,setOpen]=useState(false);
   const [error,setError]=useState('');
@@ -56,7 +62,7 @@ function Notifications({dispatch,drive}:{dispatch:boolean;drive:boolean}) {
       {notices.data?.map(item=><div key={item.id} className={item.read_at?'':'unread'}><b>{item.message}</b><small>{dateTime(item.created_at)}</small></div>)}
       {notices.data?.length===0&&<p>You’re all caught up.</p>}
       {!notices.data&&!notices.error&&<p>Loading notifications…</p>}
-      {(dispatch||drive)&&<p><a href={dispatch?'/admin/dispatch':'/admin/driver'}>Open deliveries →</a></p>}
+      {deliveriesLink&&<p><a href={deliveriesLink}>Open deliveries →</a></p>}
     </div>}
   </div>;
 }
@@ -66,40 +72,58 @@ export default function Admin({section='overview'}:{section?:string}) {
   const [initialized,setInitialized]=useState(false);
   const [error,setError]=useState('');
   const [drawer,setDrawer]=useState(false);
+  const [requestedRole,setRequestedRole]=useState<StaffRole>();
   const login=useCallback(()=>{
     setError('');
     void ops<Profile>('read','profile').then(setProfile).catch(e=>{sessionStorage.removeItem('vc-session');setError(e.message);});
   },[]);
   useEffect(()=>{
     if(!authFragment().has('access_token')&&!authFragment().has('token_hash')&&getSession())login();
+    const role=new URLSearchParams(location.search).get('preview');
+    setRequestedRole(staffRoles.find(value=>value===role));
     setInitialized(true);
   },[login]);
   if(!initialized)return <main className="ops-sign-in"><p>Opening staff portal…</p></main>;
   if(!profile)return <main className="ops-sign-in"><Brand/><Feedback message={error} failed/><Auth onLogin={login}/><a href="/">← Back to the website</a></main>;
 
-  const can=(permission:Permission)=>profile.permissions?.includes(permission)||false;
+  const canPreview=canPreviewStaffRoles(profile.role);
+  const previewRole=canPreview?requestedRole:undefined;
+  const displayedProfile=previewRole?previewProfile(previewRole):profile;
+  const href=(path:string)=>previewPath(path,previewRole);
+  const can=(permission:Permission)=>displayedProfile.permissions?.includes(permission)||false;
   const links=sections.filter(link=>!('scopes'in link)||link.scopes.some(can));
   const current=links.find(link=>link.path===section);
-  return <div className="ops-shell">
+  return <PortalContext.Provider value={previewRole?samplePortal:livePortal}><div className="ops-shell">
     <aside className={'ops-sidebar '+(drawer?'open':'')}>
-      <Brand light/><nav aria-label="Staff workspaces">{links.map(({path,title,icon:Icon})=><a key={path} href={pathFor(path)} aria-current={path===section?'page':undefined}><Icon size={20}/>{title}</a>)}</nav>
+      <Brand light/><nav aria-label="Staff workspaces">{links.map(({path,title,icon:Icon})=><a key={path} href={href(path)} aria-current={path===section?'page':undefined}><Icon size={20}/>{title}</a>)}</nav>
       <a href="/" className="ops-site-link">Public website ↗</a>
     </aside>
     <div className="ops-body">
       <header className="ops-header">
         <button className="ops-menu" aria-label="Toggle staff navigation" aria-expanded={drawer} onClick={()=>setDrawer(!drawer)}>{drawer?<X size={20}/>:<Menu size={20}/>}</button>
-        <div className="ops-account"><strong>{roles[profile.role]||profile.role}</strong><small>{profile.email}</small></div>
-        <div className="ops-actions"><Notifications dispatch={can('dispatch')} drive={can('drive')}/><button aria-label="Sign out" onClick={()=>{sessionStorage.removeItem('vc-session');setProfile(undefined);}}><LogOut size={18}/><span>Sign out</span></button></div>
+        <div className="ops-account"><strong>{roles[displayedProfile.role]||displayedProfile.role}</strong><small>{displayedProfile.email}</small></div>
+        <div className="ops-actions">
+          {canPreview&&!previewRole&&<a className="ops-preview-link" href={previewPath('overview','driver')} aria-label="Role preview" title="Role preview"><Eye size={18}/><span>Role preview</span></a>}
+          <Notifications deliveriesLink={can('dispatch')?href('dispatch'):can('drive')?href('driver'):undefined}/>
+          {!previewRole&&<button aria-label="Sign out" onClick={()=>{sessionStorage.removeItem('vc-session');setProfile(undefined);}}><LogOut size={18}/><span>Sign out</span></button>}
+        </div>
       </header>
       <main className="ops-main">
+        {previewRole&&<section className="ops-role-preview" aria-label="Staff role preview">
+          <div><strong>Role preview</strong><p>Explore the role’s standard workspaces using sample data. Changes cannot be saved here.</p></div>
+          <label>Viewing as<select value={previewRole} onChange={e=>location.assign(previewPath('overview',e.target.value as StaffRole))}>
+            {staffRoles.map(role=><option key={role} value={role}>{roles[role]}</option>)}
+          </select></label>
+          <a href="/admin">Exit preview</a>
+        </section>}
         <div className="ops-heading"><h1>{current?.title||'Workspace unavailable'}</h1><p>{current?taglines[section]:'Your account needs permission to use this workspace.'}</p></div>
-        {!current&&<a href="/admin">← Return to the overview</a>}
+        {!current&&<a href={href('overview')}>← Return to the overview</a>}
         {current&&section==='overview'&&<>
-          {can('dispatch')&&<DeliveryOverview/>}
-          <div className="ops-shortcuts">{links.filter(link=>link.path!=='overview').map(({path,title,icon:Icon})=><a key={path} href={pathFor(path)}><Icon size={23}/><strong>{title}</strong><span>{taglines[path]}</span></a>)}</div>
+          {can('dispatch')&&<DeliveryOverview link={href('dispatch')}/>}
+          <div className="ops-shortcuts">{links.filter(link=>link.path!=='overview').map(({path,title,icon:Icon})=><a key={path} href={href(path)}><Icon size={23}/><strong>{title}</strong><span>{taglines[path]}</span></a>)}</div>
           {links.length===1&&<Panel title="Your access is limited"><p>Ask the owner to assign the staff workspaces you need.</p></Panel>}
         </>}
-        {current&&section==='finance'&&<Finance canEnter={can('finance')} canReport={can('finance_reports')} actor={profile.id}/>}
+        {current&&section==='finance'&&<Finance canEnter={can('finance')} canReport={can('finance_reports')} actor={displayedProfile.id}/>}
         {current&&section==='dispatch'&&<Dispatch/>}
         {current&&section==='driver'&&<Driver/>}
         {current&&section==='enquiries'&&<Enquiries/>}
@@ -108,5 +132,5 @@ export default function Admin({section='overview'}:{section?:string}) {
         {current&&section==='access'&&<StaffAccess/>}
       </main>
     </div>
-  </div>;
+  </div></PortalContext.Provider>;
 }

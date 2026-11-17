@@ -5,6 +5,23 @@ export const permissionLabels:Record<Permission,string>={
   catalog:'Manage product visibility',leads:'Manage enquiries',website:'Edit and publish website',access:'Manage staff access',
 };
 export const roles:Record<string,string>={admin:'Administrator',accountant:'Accountant',dispatcher:'Dispatcher',driver:'Driver',catalog_editor:'Product manager',marketing_editor:'Website editor',reports_viewer:'Reports viewer',owner:'Owner',order_fulfillment:'Dispatcher (legacy)'};
+const rolePermissions = {
+  owner: ['finance','finance_reports','dispatch','drive','catalog','leads','website','access'],
+  admin: ['finance','finance_reports','dispatch','catalog','leads','website'],
+  accountant: ['finance','finance_reports'],
+  dispatcher: ['dispatch'],
+  driver: ['drive'],
+  catalog_editor: ['catalog'],
+  marketing_editor: ['website'],
+  reports_viewer: ['finance_reports'],
+  order_fulfillment: ['dispatch'],
+} satisfies Record<string, Permission[]>;
+
+export type StaffRole = keyof typeof rolePermissions;
+export const staffRoles = Object.keys(rolePermissions) as StaffRole[];
+export const defaultPermissions: Readonly<Record<string, Permission[]>> = rolePermissions;
+export const canPreviewStaffRoles = (role:string) => role==='owner' || role==='admin';
+
 let refreshing:Promise<string>|null=null;
 export async function staffToken(force=false) {
   const raw=sessionStorage.getItem('vc-session');

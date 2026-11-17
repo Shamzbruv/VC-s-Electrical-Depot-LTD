@@ -1,7 +1,7 @@
 'use client';
 
 import {useCallback,useEffect,useState,type ReactNode} from 'react';
-import {ops} from '../../lib/ops-client';
+import {useOps} from './portal-context';
 
 export function today() {
   const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Jamaica',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
@@ -13,6 +13,7 @@ export const jmd=(cents:number)=>new Intl.NumberFormat('en-JM',{style:'currency'
 export const payload=(form:HTMLFormElement)=>Object.fromEntries(new FormData(form));
 
 export function useWorkspace<T>(area:string,input:object={},interval=0) {
+  const {request:ops,preview}=useOps();
   const serialized=JSON.stringify(input);
   const [data,setData]=useState<T>();
   const [error,setError]=useState('');
@@ -21,7 +22,7 @@ export function useWorkspace<T>(area:string,input:object={},interval=0) {
     setData(result);
     setError('');
     return result;
-  },[area,serialized]);
+  },[area,serialized,ops]);
   useEffect(()=>{
     let active=true;
     const fetchData=()=>ops<T>('read',area,JSON.parse(serialized)).then(result=>{
@@ -29,13 +30,14 @@ export function useWorkspace<T>(area:string,input:object={},interval=0) {
     }).catch(e=>{if(active)setError(e.message);});
     setData(undefined);
     void fetchData();
-    const timer=interval?setInterval(fetchData,interval):undefined;
+    const timer=interval&&!preview?setInterval(fetchData,interval):undefined;
     return ()=>{active=false;clearInterval(timer);};
-  },[area,serialized,interval]);
+  },[area,serialized,interval,ops,preview]);
   return {data,error,reload};
 }
 
 export function useAction() {
+  const {request:ops}=useOps();
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState('');
   const [failed,setFailed]=useState(false);

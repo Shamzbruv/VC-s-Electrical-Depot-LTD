@@ -1,13 +1,14 @@
 'use client';
 
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {ops} from '../../lib/ops-client';
+import {useOps} from './portal-context';
 import {websitePages,websiteUrl,type Selection,type WebsiteEdits,type WebsiteValue} from '../../lib/website';
 import {Feedback,Field,Panel,payload} from './workspace';
 
 type Revision={revision:number;draft:WebsiteEdits;published:WebsiteEdits;published_at?:string};
 
 export default function Editor() {
+  const {request:ops}=useOps();
   const [route,setRoute]=useState<string>('/');
   const [view,setView]=useState('desktop');
   const [base,setBase]=useState<Revision>();
@@ -34,7 +35,7 @@ export default function Editor() {
       if(active){setBase(current);setHome(shared);setEdits(current.draft);}
     }).catch(e=>{if(active)setError(e.message);});
     return ()=>{active=false;};
-  },[route]);
+  },[route,ops]);
   useEffect(()=>{
     const receive=(e:MessageEvent)=>{
       if(e.origin!==location.origin||e.source!==frame.current?.contentWindow)return;
