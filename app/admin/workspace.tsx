@@ -3,7 +3,10 @@
 import {useCallback,useEffect,useState,type ReactNode} from 'react';
 import {ops} from '../../lib/ops-client';
 
-export const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Jamaica',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+export function today() {
+  const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Jamaica',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+  return ['year','month','day'].map(type=>parts.find(part=>part.type===type)?.value).join('-');
+}
 export const dateTime=(value:string)=>new Intl.DateTimeFormat('en-JM',{timeZone:'America/Jamaica',dateStyle:'medium',timeStyle:'short'}).format(new Date(value));
 export const label=(value:string)=>value.replaceAll('_',' ').replace(/^./,c=>c.toUpperCase());
 export const jmd=(cents:number)=>new Intl.NumberFormat('en-JM',{style:'currency',currency:'JMD',currencyDisplay:'code'}).format(cents/100);

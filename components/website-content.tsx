@@ -4,7 +4,7 @@ import {usePathname} from 'next/navigation';
 import {useEffect} from 'react';
 import {validRoute,websiteUrl,type Selection,type WebsiteEdits,type WebsiteValue} from '../lib/website';
 
-const textTags='h1,h2,h3,h4,h5,h6,p,li,summary,dt,dd,a,figcaption,.eyebrow,.topline span,.sales-wordmark strong,.sales-wordmark b';
+const textTags='h1,h2,h3,h4,h5,h6,p,li,summary,dt,dd,a,figcaption,.eyebrow,.hero-label,.hero-foot span,.benefits b,.benefits small,.category-card > span,.topline span,.sales-wordmark strong,.sales-wordmark b';
 const zones='main,header.store-header,.topline,footer';
 const ignore='form,.product-card,[data-website-ignore],svg,button,a[aria-label="VC’s Electrical Sales home"] img';
 type TextNode=ChildNode & {data:string};
@@ -31,8 +31,8 @@ export default function WebsiteContent() {
         const update=(id.startsWith('shared-')?shared:main)[id]||{};
         if(parts.length){
           if(typeof update.text==='string'){
-            parts[0].data=update.text;
-            parts.slice(1).forEach(part=>{part.data='';});
+            const lines=update.text.split('\n');
+            parts.forEach((part,index)=>{part.data=lines.length===parts.length?lines[index]:index===0?update.text:'';});
           } else parts.forEach((part,index)=>{part.data=baseline[index];});
         }
         if(typeof original.href==='string')element.setAttribute('href',typeof update.href==='string'&&websiteUrl(update.href)?update.href:original.href);
@@ -50,10 +50,12 @@ export default function WebsiteContent() {
       const elements=document.querySelectorAll<HTMLElement>(zones.split(',').flatMap(zone=>[zone+' :is('+textTags+')',zone+' img']).join(','));
       for(const element of elements){
         if(records.has(element)||element.closest(ignore))continue;
-        const parts=nodes(element);
+        const direct=nodes(element);
+        const parts=direct.length||!/^H[1-6]$/.test(element.tagName)
+          ?direct:Array.from(element.querySelectorAll<HTMLElement>('span')).flatMap(nodes);
         const baseline=parts.map(part=>part.data);
         const original:WebsiteValue={};
-        if(parts.length)original.text=baseline.map(part=>part.trim()).join(' ');
+        if(parts.length)original.text=baseline.map(part=>part.trim()).join('\n');
         if(element.tagName==='IMG'){
           original.src=element.getAttribute('src')||'';
           original.alt=element.getAttribute('alt')||'';
