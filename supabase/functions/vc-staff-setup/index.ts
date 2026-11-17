@@ -9,7 +9,7 @@ Deno.serve(async (request:Request)=>{
   if(request.method!=='POST')return reply({error:'Use POST.'},405);
   if(!url||!anon||!service)return reply({error:'Staff setup is unavailable.'},503);
   const authorization=request.headers.get('authorization');
-  if(!authorization?.startsWith('Bearer '))return reply({error:'Sign in as the owner.'},401);
+  if(!authorization?.startsWith('Bearer '))return reply({error:'Sign in as an owner or administrator.'},401);
   try{
     const sessionHeaders={apikey:anon,Authorization:authorization,'Content-Type':'application/json'};
     // Verify the bearer token with Auth before using any elevated credentials.
@@ -22,10 +22,17 @@ Deno.serve(async (request:Request)=>{
     const access=await fetch(url+'/rest/v1/rpc/vcs_read',{
       method:'POST',headers:sessionHeaders,body:JSON.stringify({p_area:'access'}),signal:AbortSignal.timeout(7000),
     });
-    if(!access.ok)return reply({error:'Owner permission required.'},403);
+    if(!access.ok)return reply({error:'Staff management permission required.'},403);
     const accounts=await access.json() as {email:string;role:string|null;active:boolean|null;pending:boolean}[];
+    const me=await fetch(url+'/rest/v1/rpc/vcs_read',{
+      method:'POST',headers:sessionHeaders,body:JSON.stringify({p_area:'profile'}),signal:AbortSignal.timeout(7000),
+    });
+    const caller=me.ok?await me.json() as {role?:string}:{};
+    const callerRole=caller.role;
     const account=accounts.find(item=>item.email.toLowerCase()===email.toLowerCase());
     if(!account?.active||!account.role||account.role==='owner')return reply({error:'Choose an approved, enabled staff account.'},400);
+    // Administrators may issue links for staff below them; only the owner may do so for another administrator.
+    if(account.role==='admin'&&callerRole!=='owner')return reply({error:'Only the owner can create a link for an administrator.'},403);
     const headers={apikey:service,Authorization:'Bearer '+service,'Content-Type':'application/json'};
     let type=account.pending?'invite':'recovery';
     const generate=()=>fetch(url+'/auth/v1/admin/generate_link',{

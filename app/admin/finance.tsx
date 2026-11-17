@@ -3,6 +3,7 @@
 import {useState} from 'react';
 import {useOps} from './portal-context';
 import {dateTime,Feedback,Field,jmd,label,Pager,Panel,payload,Stat,today,useAction,useWorkspace} from './workspace';
+import {auditEvent} from '../../lib/ops-client';
 
 type Entry={id:string;entry_date:string;kind:'income'|'expense';category:string;amount_cents:number;method:string;party:string;reference:string;notes:string;created_at:string;created_by:string;voided_at?:string;void_reason?:string};
 type Report={totals:{income:number;expense:number;count:number};trend:{day:string;income:number;expense:number}[];categories:{kind:string;category:string;amount:number}[];rows:Entry[]};
@@ -17,6 +18,7 @@ function exportReport(rows:Entry[],from:string,to:string) {
   const url=URL.createObjectURL(new Blob(['\uFEFF',csv],{type:'text/csv;charset=utf-8'}));
   const link=document.createElement('a');
   link.href=url;link.download='vc-finance-'+from+'-to-'+to+'.csv';link.click();
+  void auditEvent('finance_export','finance');
   setTimeout(()=>URL.revokeObjectURL(url),5000);
 }
 

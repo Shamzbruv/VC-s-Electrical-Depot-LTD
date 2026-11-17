@@ -54,3 +54,11 @@ AC-01: desktop and 390 px storefront browser inspection and mobile navigation to
 AC-02/03/04/05: partial; basic SKU, price and catalog management implemented; full variant/media/import acceptance pending.
 AC-06/09/11: transactional assertions and simultaneous two-request oversell test passed; full browser acceptance pending.
 AC-07/08/10/12/13/14/15/16/17/18/19/20: partial or blocked as detailed above; not marked accepted merely because a screen exists.
+
+## Staff portal redesign, Team and Audit (migration 009)
+- Administrators now manage staff (Team workspace): directory, profiles, role and permission changes, disable/enable, one-time setup links. Only the owner can assign, change or link the Administrator role; the owner account cannot be changed by anyone. Enforced in SQL (`vcs_write` wrapper) as well as the UI.
+- New Audit trail workspace (owner and administrators): filters, search, before/after detail, CSV export of the viewed page. `audit_logs` is append-only (update, delete and truncate are blocked by triggers) and every row records the actor's email and role.
+- Logged: every action that goes through `vcs_write` (finance, dispatch, products, enquiries, website, staff access), stock adjustments, order actions, plus sign-in, sign-out, finance CSV export and role preview reported by the portal.
+- Not yet logged: failed sign-ins and password resets (handled by Supabase Auth), media uploads/deletes, invoice PDF downloads. These need server-side hooks.
+- Portal redesign: design tokens with light/dark themes, collapsible grouped sidebar, command palette (Ctrl/Cmd+K), account menu, tailored overview with needs-attention queue, activity feed and 14-day finance chart, split-screen sign-in.
+- Verification: `tests/team_audit.sql` (run after migrations 001-009 on a disposable database) asserts the permission and append-only rules. `pnpm run build:railway` passes. Migration 009 and the updated `vc-staff-setup` function must be applied/deployed to Supabase before the Team and Audit screens work in production.

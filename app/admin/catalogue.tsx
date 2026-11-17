@@ -92,50 +92,18 @@ export function Enquiries() {
   </Panel>;
 }
 
-type Account={id:string;email:string;role:string|null;active:boolean|null;permissions:Permission[]|null;pending?:boolean};
-const assignable=staffRoles.filter(role=>role!=='owner'&&role!=='order_fulfillment');
-function AccountForm({account,onSave,busy}:{account?:Account;onSave:(data:object)=>void;busy:boolean}) {
+export type Account={id:string;email:string;role:string|null;active:boolean|null;permissions:Permission[]|null;pending?:boolean};
+const assignable=(owner:boolean)=>staffRoles.filter(role=>role!=='owner'&&role!=='order_fulfillment'&&(owner||role!=='admin'));
+export function AccountForm({account,onSave,busy,isOwner}:{account?:Account;onSave:(data:object)=>void;busy:boolean;isOwner:boolean}) {
   const [role,setRole]=useState(account?.role==='order_fulfillment'?'dispatcher':account?.role||'driver');
   const [custom,setCustom]=useState(!!account?.permissions);
   const [scopes,setScopes]=useState<Permission[]>(account?.permissions||defaults[role]||[]);
-  return <form onSubmit={e=>{e.preventDefault();const values=payload(e.currentTarget);onSave({id:account?.id,email:account?.email||values.email,role,active:values.active==='on',permissions:custom?scopes:null});}}>
+  return <form onSubmit={e=>{e.preventDefault();const values=payload(e.currentTarget);onSave({id:account?.id,email:account?.email||values.email,role,active:values.active==='on',permissions:custom?scopes.filter(scope=>scope!=='access'&&scope!=='audit'):null});}}>
     {!account&&<Field title="Staff email address"><input type="email" name="email" required maxLength={254}/></Field>}
-    <div className="ops-fields"><Field title="Role"><select value={role} onChange={e=>{setRole(e.target.value);if(!custom)setScopes(defaults[e.target.value]);}}>{assignable.map(value=><option key={value} value={value}>{roles[value]}</option>)}</select></Field>
+    <div className="ops-fields"><Field title="Role"><select value={role} onChange={e=>{setRole(e.target.value);if(!custom)setScopes(defaults[e.target.value]);}}>{assignable(isOwner).map(value=><option key={value} value={value}>{roles[value]}</option>)}</select></Field>
     <label className="ops-check"><input name="active" type="checkbox" defaultChecked={account?.active??true}/>Enable workspace access</label></div>
     <label className="ops-check"><input type="checkbox" checked={custom} onChange={e=>{setCustom(e.target.checked);if(e.target.checked)setScopes(defaults[role]);}}/>Customize these permissions</label>
-    {custom&&<fieldset className="ops-permission"><legend>Workspace permissions</legend>{(Object.keys(permissionLabels) as Permission[]).filter(scope=>scope!=='access').map(scope=><label key={scope} className="ops-check"><input type="checkbox" checked={scopes.includes(scope)} onChange={e=>setScopes(items=>e.target.checked?[...items,scope]:items.filter(item=>item!==scope))}/>{permissionLabels[scope]}</label>)}</fieldset>}
+    {custom&&<fieldset className="ops-permission"><legend>Workspace permissions</legend>{(Object.keys(permissionLabels) as Permission[]).filter(scope=>scope!=='access'&&scope!=='audit').map(scope=><label key={scope} className="ops-check"><input type="checkbox" checked={scopes.includes(scope)} onChange={e=>setScopes(items=>e.target.checked?[...items,scope]:items.filter(item=>item!==scope))}/>{permissionLabels[scope]}</label>)}</fieldset>}
     <button className="ops-primary" disabled={busy}>{account?'Save access':'Approve staff email'}</button>
   </form>;
-}
-export function StaffAccess() {
-  const {request:ops}=useOps();
-  const accounts=useWorkspace<Account[]>('access');
-  const action=useAction();
-  const [invite,setInvite]=useState<{email:string;url:string}>();
-  const [linkError,setLinkError]=useState('');
-  const [loadingLink,setLoadingLink]=useState('');
-  async function createLink(email:string) {
-    setInvite(undefined);setLinkError('');setLoadingLink(email);
-    try {
-      const result=await ops<{token_hash:string;type:string}>('write','staff_setup_link',{email});
-      const fragment=new URLSearchParams({type:result.type,token_hash:result.token_hash});
-      setInvite({email,url:location.origin+'/admin#'+fragment.toString()});
-    }catch(e){setLinkError(e instanceof Error?e.message:'Could not create a link.');}
-    finally{setLoadingLink('');}
-  }
-  return <>
-    <Panel title="Approve a staff member" note="Approve the staff email and permissions. Create a one-time setup link and share it privately with that person so they can choose a password.">
-      <AccountForm busy={action.busy} onSave={data=>void action.run('access_invite',data,accounts.reload,'Staff email approved. Account activation is now available.')}/>
-    </Panel>
-    <Feedback message={action.message||accounts.error} failed={action.failed||!!accounts.error}/>
-    <Feedback message={linkError} failed/>
-    <Panel title="Staff and permissions" note="The owner can set a role template or choose the exact permissions needed for an individual.">
-      {accounts.data?.map(account=><article className="ops-list-card" key={account.id||account.email}><div className="ops-list-heading"><div><h3>{account.email}</h3><small>{account.role?roles[account.role]:'Unassigned'}</small></div><Badge value={account.pending?'awaiting_activation':account.active?'enabled':'disabled'}/></div>
-        {account.role==='owner'?<p className="ops-muted">Owner access includes all workspaces and staff permissions.</p>:<details><summary>Edit access</summary><AccountForm key={JSON.stringify(account)} account={account} busy={action.busy} onSave={data=>void action.run(account.pending?'access_invite':'access_save',data,accounts.reload,'Access updated.')}/>
-          {account.active&&<div className="ops-actions"><button disabled={!!loadingLink} onClick={()=>void createLink(account.email)}>{loadingLink===account.email?'Creating link…':account.pending?'Create one-time setup link':'Create one-time password reset link'}</button></div>}
-          {invite?.email===account.email&&<div className="ops-confirm"><Field title="Private one-time link"><input value={invite.url} readOnly onFocus={e=>e.target.select()}/></Field><button onClick={()=>{void navigator.clipboard.writeText(invite.url).catch(()=>setLinkError('Select and copy the link manually.'));}}>Copy link</button><p>Send this directly to the intended staff member.</p></div>}
-        </details>}
-      </article>)}
-    </Panel>
-  </>;
 }

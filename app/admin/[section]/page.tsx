@@ -1,6 +1,6 @@
 import {notFound} from 'next/navigation';
 
-const workspaces=['finance','dispatch','driver','enquiries','products','website','access'];
+const workspaces=['finance','dispatch','driver','enquiries','products','website','team','audit'];
 export const metadata={title:'Staff workspace',robots:{index:false,follow:false}};
 export function generateStaticParams(){return workspaces.map(section=>({section}));}
 export default async function Page({params}:{params:Promise<{section:string}>}){

@@ -12,6 +12,10 @@ export async function POST(req:Request) {
     if (action==='write'&&area==='staff_setup_link') {
       return response(await supabase('/functions/v1/vc-staff-setup',{token,body:{email:input?.email}}));
     }
+    if (action==='read'&&area==='team')return response(await supabase('/rest/v1/rpc/vcs_team_read',{token,body:{p:input||{}}}));
+    if (action==='read'&&area==='audit')return response(await supabase('/rest/v1/rpc/vcs_audit_read',{token,body:{p:input||{}}}));
+    if (action==='write'&&area==='staff_profile_save')return response(await supabase('/rest/v1/rpc/vcs_team_write',{token,body:{p_action:area,p:input||{}}}));
+    if (action==='write'&&area==='audit_event')return response(await supabase('/rest/v1/rpc/vcs_audit_event',{token,body:{p_kind:input?.kind,p:{area:input?.area}}}));
     if (action==='read'&&area==='dashboard')return response(await supabase('/rest/v1/rpc/vcs_dashboard',{token,body:{}}));
     const path=action==='read'?'/rest/v1/rpc/vcs_read':'/rest/v1/rpc/vcs_write';
     return response(await supabase(path,{token,body:{[action==='read'?'p_area':'p_action']:area,p:input||{}}}));

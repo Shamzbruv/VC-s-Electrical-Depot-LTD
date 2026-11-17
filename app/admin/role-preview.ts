@@ -59,6 +59,13 @@ export async function previewRequest<T>(action:'read'|'write',area:string,input:
     }
     case 'leads': result=input.offset?[]:[{id:'preview-quote',kind:'quote',name:'Sample customer',email:'customer@example.invalid',body:'I’d like a bulk quote for 50 lengths of conduit.',status:'new',created_at:created}];break;
     case 'access': result=[{id:'preview-driver',email:sampleEmail,role:'driver',active:true,permissions:null}];break;
+    case 'team': result=[
+      {id:'preview-driver',email:sampleEmail,role:'driver',active:true,permissions:null,pending:false,last_sign_in_at:created,created_at:created,display_name:'Sample driver',job_title:'Driver',phone:null,actions_30d:2},
+      {id:null,email:'new.hire@example.invalid',role:'dispatcher',active:true,permissions:null,pending:true,last_sign_in_at:null,created_at:created,display_name:null,job_title:null,phone:null,actions_30d:0}];break;
+    case 'audit': result={total:2,rows:[
+      {id:'p1',created_at:created,actor:'preview-driver',actor_email:sampleEmail,actor_role:'driver',operation:'drive_accept',entity:'operations',summary:'Accepted a delivery',outcome:'success',details:{id:'preview-package'}},
+      {id:'p2',created_at:created,actor:'preview-driver',actor_email:sampleEmail,actor_role:'driver',operation:'sign_in',entity:'session',summary:'Signed in',outcome:'success',details:{}}],
+      operations:['drive_accept','sign_in'],people:[{id:'preview-driver',email:sampleEmail}]};break;
     case 'website': result={revision:0,draft:{},published:{}};break;
     default: throw Error('This workspace is unavailable in role preview.');
   }

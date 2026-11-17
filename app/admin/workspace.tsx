@@ -74,3 +74,39 @@ export function Badge({value}:{value:string}) {
 export function Pager({offset,setOffset,length}:{offset:number;setOffset:(offset:number)=>void;length:number}) {
   return (offset>0||length>=200)?<div className="ops-actions"><button disabled={!offset} onClick={()=>setOffset(offset-200)}>Previous</button><span>Page {offset/200+1}</span><button disabled={length<200} onClick={()=>setOffset(offset+200)}>Next</button></div>:null;
 }
+
+export function initials(value:string) {
+  const parts=value.split('@')[0].split(/[\s._-]+/).filter(Boolean);
+  return ((parts[0]?.[0]||'?')+(parts[1]?.[0]||'')).toUpperCase();
+}
+export function Avatar({name,large=false}:{name:string;large?:boolean}) {
+  return <span className={'ops-avatar'+(large?' lg':'')} aria-hidden="true">{initials(name)}</span>;
+}
+export function Skeleton({rows=4}:{rows?:number}) {
+  return <div role="status" aria-label="Loading">{Array.from({length:rows},(_,i)=><div key={i} className="ops-skeleton" style={{width:(92-i*9)+'%'}}/>)}</div>;
+}
+export function Empty({title,note}:{title:string;note?:string}) {
+  return <div className="ops-empty"><strong>{title}</strong>{note&&<p className="ops-muted" style={{margin:'6px 0 0'}}>{note}</p>}</div>;
+}
+export function timeAgo(value?:string|null) {
+  if(!value)return 'Never';
+  const seconds=Math.max(0,(Date.now()-new Date(value).getTime())/1000);
+  if(seconds<60)return 'Just now';
+  if(seconds<3600)return Math.floor(seconds/60)+' min ago';
+  if(seconds<86400)return Math.floor(seconds/3600)+' hr ago';
+  if(seconds<86400*14)return Math.floor(seconds/86400)+' days ago';
+  return dateTime(value);
+}
+export function Drawer({title,subtitle,onClose,children,avatar}:{title:string;subtitle?:string;onClose:()=>void;children:ReactNode;avatar?:string}) {
+  useEffect(()=>{
+    const key=(e:KeyboardEvent)=>{if(e.key==='Escape')onClose();};
+    document.addEventListener('keydown',key);
+    return ()=>document.removeEventListener('keydown',key);
+  },[onClose]);
+  return <><div className="ops-scrim" onClick={onClose}/>
+    <aside className="ops-drawer" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="ops-drawer-head">{avatar&&<Avatar name={avatar} large/>}<div style={{minWidth:0}}><h2>{title}</h2>{subtitle&&<small className="ops-muted">{subtitle}</small>}</div>
+        <button className="x ops-icon-btn" onClick={onClose} aria-label="Close panel">✕</button></div>
+      <div className="ops-drawer-body">{children}</div>
+    </aside></>;
+}

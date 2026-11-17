@@ -1,13 +1,13 @@
-export type Permission='finance'|'finance_reports'|'dispatch'|'drive'|'catalog'|'leads'|'website'|'access';
+export type Permission='finance'|'finance_reports'|'dispatch'|'drive'|'catalog'|'leads'|'website'|'access'|'audit';
 export type Profile={id:string;role:string;email:string;permissions:Permission[]|null};
 export const permissionLabels:Record<Permission,string>={
   finance:'Log daily finances',finance_reports:'Read financial reports',dispatch:'Manage dispatch',drive:'Driver workspace',
-  catalog:'Manage product visibility',leads:'Manage enquiries',website:'Edit and publish website',access:'Manage staff access',
+  catalog:'Manage product visibility',leads:'Manage enquiries',website:'Edit and publish website',access:'Manage staff',audit:'Read the audit trail',
 };
 export const roles:Record<string,string>={admin:'Administrator',accountant:'Accountant',dispatcher:'Dispatcher',driver:'Driver',catalog_editor:'Product manager',marketing_editor:'Website editor',reports_viewer:'Reports viewer',owner:'Owner',order_fulfillment:'Dispatcher (legacy)'};
 const rolePermissions = {
-  owner: ['finance','finance_reports','dispatch','drive','catalog','leads','website','access'],
-  admin: ['finance','finance_reports','dispatch','catalog','leads','website'],
+  owner: ['finance','finance_reports','dispatch','drive','catalog','leads','website','access','audit'],
+  admin: ['finance','finance_reports','dispatch','catalog','leads','website','access','audit'],
   accountant: ['finance','finance_reports'],
   dispatcher: ['dispatch'],
   driver: ['drive'],
@@ -45,4 +45,8 @@ export async function ops<T=any>(action:'read'|'write',area:string,input:object=
   const data=await res.json() as T & {error?:string};
   if (!res.ok) throw Error(data.error||'Unable to reach the workspace.');
   return data as T;
+}
+
+export async function auditEvent(kind:'sign_in'|'sign_out'|'finance_export'|'role_preview',area='') {
+  try{await ops('write','audit_event',{kind,area});}catch{/* audit reporting must never block the workspace */}
 }

@@ -44,10 +44,16 @@ const guide:Record<string,[string,string[]]>={
     'Save draft to continue later. When ready, review the preview and choose Publish page, then confirm. Discard draft restores the live version in the preview.',
     'Update product listings and their visibility in Products. Use this editor for page content.',
   ]],
-  '/admin/access':['Setting up staff permissions',[
-    'Enter a staff member’s email, choose a role and decide whether to use the role defaults or customize individual workspaces.',
-    'Choose Approve staff email, then open Edit access and click Create one-time setup link. Copy it and share it privately with the intended staff member.',
-    'Open Edit access to change someone’s permissions or disable access. If a driver loses permission during delivery, dispatch receives an issue to reassign.',
+  '/admin/team':['Managing your team',[
+    'Search or filter the directory. Select a person to open their profile, access settings and recent activity.',
+    'Choose Approve staff member, enter their email and pick a role. Then open their profile, go to Access and create a one-time setup link to share privately.',
+    'Use Access to change a role, customise permissions or disable someone. Administrators can manage staff below them; only the owner can change an Administrator.',
+    'Every change is recorded in the audit trail.',
+  ]],
+  '/admin/audit':['Reading the audit trail',[
+    'Each row is one recorded action: who did it, what they did and when. Select a row for the full details, including before and after values for changes.',
+    'Filter by person, action or date, or search for a name or keyword. Export the page you are viewing as a CSV.',
+    'Audit records are append-only. They cannot be edited or deleted by anyone through the portal.',
   ]],
 };
 
