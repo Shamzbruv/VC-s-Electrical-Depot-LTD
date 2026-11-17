@@ -1,6 +1,10 @@
-import type {ReactNode} from 'react';
+import {Suspense,type ReactNode} from 'react';
 import PageHelp from '../../components/page-help';
+import Admin,{StaffPortalLoading} from './admin';
 
 export default function AdminLayout({children}:{children:ReactNode}) {
-  return <>{children}<PageHelp/></>;
+  return <>
+    <Suspense fallback={<StaffPortalLoading/>}><Admin>{children}</Admin></Suspense>
+    <PageHelp/>
+  </>;
 }
