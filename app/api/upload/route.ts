@@ -1,4 +1,4 @@
-import {mediaBucket,mediaLabel,mediaLimit,mediaNamePattern,mediaPath} from '../../../lib/media';
+import {mediaLabel,mediaLimit,mediaNamePattern,mediaPath} from '../../../lib/media';
 import {objectPath,staffBearer,storageRequest} from '../../../lib/media-server';
 import {response,sameOrigin,supabase} from '../../../lib/operations-server';
 
@@ -12,21 +12,20 @@ export async function GET(req:Request) {
   const token=staffBearer(req);
   if(!token)return response({error:'Sign in to open the media library.'},401);
   try{
-    if(!await allowed(token))return response({error:'Website or product access is required.'},403);
     const url=new URL(req.url);
     const query=(url.searchParams.get('q')||'').toLowerCase().replace(/[^a-z0-9 -]/g,'').trim().replace(/ +/g,'-').slice(0,70);
     const offset=Math.max(0,Math.min(10000,Math.trunc(Number(url.searchParams.get('offset'))||0)));
     const limit=8;
-    const result=await storageRequest('list/'+mediaBucket,{token,method:'POST',type:'application/json',body:JSON.stringify({
-      prefix:'',limit:limit+1,offset,sortBy:{column:'created_at',order:'desc'},...(query?{search:query}:{}),
-    })});
-    if(!result.ok)return response({error:'Could not open the media library.'},result.status===401?401:502);
-    const rows=await result.json() as {name:string;created_at?:string}[];
+    const rows=await supabase<{name:string;created_at?:string}[]>('/rest/v1/rpc/vcs_media_library',{
+      token,body:{p_query:query,p_offset:offset},
+    });
     return response({items:rows.slice(0,limit).filter(row=>mediaNamePattern.test(row.name)).map(row=>({
       src:mediaPath+row.name,label:mediaLabel(row.name),createdAt:row.created_at,
     })),more:rows.length>limit,limit});
   }catch(error){
-    return response({error:'Could not open the media library.'},error instanceof Error&&error.message.includes('session expired')?401:502);
+    const message=error instanceof Error?error.message:'';
+    if(message.includes('permission required'))return response({error:'Website or product access is required.'},403);
+    return response({error:'Could not open the media library.'},message.includes('session expired')?401:502);
   }
 }
 
