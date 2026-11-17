@@ -1,12 +1,13 @@
-import {defaultPermissions,type StaffRole,type Profile} from '../../lib/ops-client';
+import {defaultPermissions,type StaffRole,type Profile,type Permission} from '../../lib/ops-client';
 import {today} from './workspace';
+import type {DashboardData} from './dashboard';
 
 const sampleEmail='driver@example.invalid';
 export function previewProfile(role:StaffRole):Profile {
   return {id:'preview-staff',email:'Sample staff account',role,permissions:defaultPermissions[role]};
 }
 
-export async function previewRequest<T>(action:'read'|'write',area:string,input:{q?:string;status?:string;offset?:number;from?:string;to?:string}={}):Promise<T> {
+export async function previewRequest<T>(action:'read'|'write',area:string,input:{q?:string;status?:string;offset?:number;from?:string;to?:string;permissions?:Permission[]}={}):Promise<T> {
   if(action==='write')throw Error('Role preview uses sample data. Switch back to your portal to make changes.');
   const day=today();
   const created=day+'T09:00:00-05:00';
@@ -18,7 +19,19 @@ export async function previewRequest<T>(action:'read'|'write',area:string,input:
   };
   let result:unknown;
   switch(area){
-    case 'overview': result={pending:1,in_transit:0,delivered:4,cancelled:0};break;
+    case 'dashboard': {
+      const permits=(permission:Permission)=>input.permissions?.includes(permission)||false;
+      const reports=permits('finance_reports');
+      const dashboard:DashboardData={};
+      if(permits('leads'))dashboard.enquiries={new_quotes:1,new_inquiries:2,reviewing:1};
+      if(permits('catalog'))dashboard.catalogue={published:4,private:2};
+      if(permits('website'))dashboard.website={drafts:1,draft_routes:['/'],last_published:null};
+      if(reports||permits('finance'))dashboard.finance={income:reports?1850000:null,expense:reports?620000:null,entries:5,reports};
+      if(permits('dispatch')||permits('drive'))dashboard.deliveries={pending:1,in_transit:0,issues:0,delivered:2,all_drivers:permits('dispatch')};
+      if(permits('access'))dashboard.team={active:3,pending:1};
+      result=dashboard;
+      break;
+    }
     case 'notifications': result=[{id:1,message:'Sample package assigned · VC-101',created_at:created}];break;
     case 'drivers': result=[{id:'preview-driver',email:sampleEmail}];break;
     case 'dispatch':

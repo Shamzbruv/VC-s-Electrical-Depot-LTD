@@ -8,7 +8,7 @@ const guide:Record<string,[string,string[]]>={
   '/admin':['Using the staff portal',[
     'Sign in with your staff email and password. If the owner sent you a one-time setup link, open it and choose your password.',
     'Open the sidebar to find the tools assigned to your account. If a workspace is missing, ask the owner to update your permissions.',
-    'The delivery overview counts packages awaiting delivery, in transit, delivered and cancelled. Open Dispatch to check the status, driver and delivery history of a package.',
+    'The overview shows activity for the workspaces you can access. Open a card to follow up on enquiries, manage products, open a draft, review accounting or check deliveries.',
     'Open the bell for staff notifications and mark them read after reviewing them.',
     'Administrators and owners can open Role preview to explore each role’s workspaces with sample data.',
   ]],
@@ -40,7 +40,7 @@ const guide:Record<string,[string,string[]]>={
   ]],
   '/admin/website':['Editing and publishing a page',[
     'Choose a page and desktop or mobile preview. Click a highlighted heading, paragraph, image or link in the preview to open its settings.',
-    'Update the selected element and click Apply in preview. Use Restore original to remove a change. Edit shared header and footer content from Home.',
+    'For an image, upload a JPEG, PNG or WebP from your device, reuse a photo from the media library, or enter an image URL. Click Apply in preview to review the change. Use Restore original to remove a change. Edit shared header and footer content from Home.',
     'Save draft to continue later. When ready, review the preview and choose Publish page, then confirm. Discard draft restores the live version in the preview.',
     'Update product listings and their visibility in Products. Use this editor for page content.',
   ]],

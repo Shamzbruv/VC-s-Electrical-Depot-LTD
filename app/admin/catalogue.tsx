@@ -4,6 +4,7 @@ import {useState} from 'react';
 import {parseCSV} from '../../lib/import';
 import {defaultPermissions as defaults,permissionLabels,roles,staffRoles,type Permission} from '../../lib/ops-client';
 import {useOps} from './portal-context';
+import {ImageField} from './image-field';
 import {Badge,dateTime,Feedback,Field,Pager,Panel,payload,useAction,useWorkspace} from './workspace';
 
 type Item={id:string;name:string;sku:string;slug:string;category:string;description:string;image:string;unit:string;status:string;sample:boolean};
@@ -16,6 +17,7 @@ export function Products() {
   const [selected,setSelected]=useState<Item|null>();
   const [importRows,setImportRows]=useState<Record<string,string>[]>([]);
   const [importError,setImportError]=useState('');
+  const [uploading,setUploading]=useState(false);
   const [confirm,setConfirm]=useState('');
   const list=useWorkspace<Item[]>('catalog',{q:search,offset});
   const action=useAction();
@@ -23,7 +25,7 @@ export function Products() {
     <Panel title={selected?'Edit '+selected.name:'Product catalogue'} note="New and imported products start private. Publish a product when you’re ready to show it on the public catalogue.">
       {selected===undefined?<div className="ops-actions"><button className="ops-primary" onClick={()=>setSelected(null)}>Add product</button><a href="/shop" target="_blank" rel="noreferrer">View public catalogue ↗</a></div>:
         <form key={selected?.id||'new'} onSubmit={e=>{
-          e.preventDefault();const values=payload(e.currentTarget);
+          e.preventDefault();if(uploading)return;const values=payload(e.currentTarget);
           void action.run('product_save',{...values,id:selected?.id,slug:selected?.slug||slugify(String(values.name)+' '+String(values.sku))},async()=>{setSelected(undefined);await list.reload();},selected?'Product updated.':'Private product added.');
         }}>
           <div className="ops-fields">
@@ -31,10 +33,10 @@ export function Products() {
             <Field title="SKU or item code"><input name="sku" defaultValue={selected?.sku} required maxLength={80}/></Field>
             <Field title="Category"><input name="category" defaultValue={selected?.category} required maxLength={100}/></Field>
             <Field title="Unit"><input name="unit" defaultValue={selected?.unit||'each'} placeholder="each, box, roll" maxLength={80}/></Field>
-            <Field title="Image URL"><input name="image" defaultValue={selected?.image} placeholder="https://…" maxLength={1000}/></Field>
+            <ImageField name="image" initial={selected?.image} onBusy={setUploading}/>
           </div>
           <Field title="Product description and specifications"><textarea name="description" defaultValue={selected?.description} rows={4} maxLength={4000}/></Field>
-          <div className="ops-actions"><button className="ops-primary" disabled={action.busy}>Save product</button><button type="button" onClick={()=>setSelected(undefined)}>Cancel</button></div>
+          <div className="ops-actions"><button className="ops-primary" disabled={action.busy||uploading}>Save product</button><button type="button" disabled={uploading} onClick={()=>setSelected(undefined)}>Cancel</button></div>
         </form>}
       <details><summary>Import products from CSV</summary><p className="ops-muted">Use name, sku and category columns. Optional columns are slug, description, image and unit. Import up to 200 products at a time. Existing SKUs are kept intact.</p>
         <Field title="Select CSV"><input type="file" accept=".csv,text/csv" onChange={async e=>{
@@ -63,7 +65,7 @@ export function Products() {
       <Feedback message={list.error} failed/>
       {list.data&&<div className="ops-table"><table><thead><tr><th>Product</th><th>Category</th><th>Visibility</th><th>Actions</th></tr></thead><tbody>
         {list.data.map(item=><tr key={item.id}><td><strong>{item.name}</strong><br/><small>{item.sku}</small></td><td>{item.category}</td><td><Badge value={item.sample?'sample':item.status==='draft'?'private':'public'}/></td>
-          <td className="ops-actions"><button onClick={()=>{setSelected(item);window.scrollTo({top:0,behavior:'smooth'});}}>Edit</button>{!item.sample&&<button disabled={action.busy} onClick={()=>void action.run('product_visibility',{id:item.id,public:item.status!=='published'},list.reload,'Product visibility updated.')}>{item.status==='published'?'Make private':'Make public'}</button>}</td></tr>)}
+          <td className="ops-actions"><button disabled={uploading} onClick={()=>{setSelected(item);window.scrollTo({top:0,behavior:'smooth'});}}>Edit</button>{!item.sample&&<button disabled={action.busy} onClick={()=>void action.run('product_visibility',{id:item.id,public:item.status!=='published'},list.reload,'Product visibility updated.')}>{item.status==='published'?'Make private':'Make public'}</button>}</td></tr>)}
       </tbody></table></div>}
       {list.data?.length===0&&<p className="ops-empty">No matching products.</p>}
       <Pager offset={offset} setOffset={setOffset} length={list.data?.length||0}/>

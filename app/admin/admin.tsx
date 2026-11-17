@@ -11,9 +11,10 @@ import {Enquiries,Products,StaffAccess} from './catalogue';
 import {Dispatch,Driver} from './delivery';
 import Editor from './editor';
 import Finance from './finance';
+import Dashboard from './dashboard';
 import {PortalContext,useOps} from './portal-context';
 import {previewProfile,previewRequest} from './role-preview';
-import {dateTime,Feedback,Panel,Stat,useWorkspace} from './workspace';
+import {dateTime,Feedback,useWorkspace} from './workspace';
 
 const sections=[
   {path:'overview',title:'Overview',icon:LayoutDashboard},
@@ -30,7 +31,7 @@ const previewPath=(path:string,role?:StaffRole)=>pathFor(path)+(role?'?preview='
 const livePortal={request:ops,preview:false};
 const samplePortal={request:previewRequest,preview:true};
 const taglines:Record<string,string>={
-  overview:'See where deliveries stand and open the tools assigned to you.',
+  overview:'See what needs attention across your staff workspaces.',
   finance:'Record income and expenses, reconcile the daily ledger and review financial activity.',
   dispatch:'Queue packages, assign drivers and follow deliveries as they progress.',
   driver:'Accept your packages, share your position in transit and log each handover.',
@@ -41,13 +42,6 @@ const taglines:Record<string,string>={
 };
 type Notice={id:number;message:string;created_at:string;read_at?:string};
 
-function DeliveryOverview({link}:{link:string}) {
-  const {data,error}=useWorkspace<Record<string,number>>('overview',{},15000);
-  return <Panel title="Delivery overview" note="Counts cover every package in dispatch."><Feedback message={error} failed/>
-    <div className="ops-stats"><Stat label="Awaiting delivery" value={data?.pending??'…'} tone="amber"/><Stat label="In transit" value={data?.in_transit??'…'}/><Stat label="Delivered" value={data?.delivered??'…'} tone="green"/><Stat label="Cancelled" value={data?.cancelled??'…'}/></div>
-    <Link className="ops-link" href={link}>Open dispatch queue →</Link>
-  </Panel>;
-}
 function Notifications({deliveriesLink}:{deliveriesLink?:string}) {
   const {request:ops}=useOps();
   const notices=useWorkspace<Notice[]>('notifications',{},12000);
@@ -139,11 +133,7 @@ export default function Admin({children}:{children:ReactNode}) {
         <div className="ops-heading"><h1>{current?.title||'Workspace unavailable'}</h1><p>{current?taglines[section]:'Your account needs permission to use this workspace.'}</p></div>
         {!current&&<Link href={href('overview')}>← Return to the overview</Link>}
         <div className="ops-workspace" key={section+':'+(previewRole||'live')}>
-          {current&&section==='overview'&&<>
-            {can('dispatch')&&<DeliveryOverview link={href('dispatch')}/>}
-            <div className="ops-shortcuts">{links.filter(link=>link.path!=='overview').map(({path,title,icon:Icon})=><Link key={path} href={href(path)}><Icon size={23}/><strong>{title}</strong><span>{taglines[path]}</span></Link>)}</div>
-            {links.length===1&&<Panel title="Your access is limited"><p>Ask the owner to assign the staff workspaces you need.</p></Panel>}
-          </>}
+          {current&&section==='overview'&&<Dashboard href={href} permissions={displayedProfile.permissions||[]}/>}
           {current&&section==='finance'&&<Finance canEnter={can('finance')} canReport={can('finance_reports')} actor={displayedProfile.id}/>}
           {current&&section==='dispatch'&&<Dispatch/>}
           {current&&section==='driver'&&<Driver/>}

@@ -12,6 +12,7 @@ export async function POST(req:Request) {
     if (action==='write'&&area==='staff_setup_link') {
       return response(await supabase('/functions/v1/vc-staff-setup',{token,body:{email:input?.email}}));
     }
+    if (action==='read'&&area==='dashboard')return response(await supabase('/rest/v1/rpc/vcs_dashboard',{token,body:{}}));
     const path=action==='read'?'/rest/v1/rpc/vcs_read':'/rest/v1/rpc/vcs_write';
     return response(await supabase(path,{token,body:{[action==='read'?'p_area':'p_action']:area,p:input||{}}}));
   } catch(error) {

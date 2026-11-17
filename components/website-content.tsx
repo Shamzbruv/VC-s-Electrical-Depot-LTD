@@ -6,7 +6,7 @@ import {validRoute,websiteUrl,type Selection,type WebsiteEdits,type WebsiteValue
 
 const textTags='h1,h2,h3,h4,h5,h6,p,li,summary,dt,dd,a,figcaption,.eyebrow,.hero-label,.hero-foot span,.benefits b,.benefits small,.category-card > span,.topline span,.sales-wordmark strong,.sales-wordmark b';
 const zones='main,header.store-header,.topline,footer';
-const ignore='form,.product-card,[data-website-ignore],svg,button,a[aria-label="VC’s Electrical Sales home"] img';
+const ignore='form,.product-card,[data-website-ignore],svg,button';
 type TextNode=ChildNode & {data:string};
 const nodes=(item:HTMLElement)=>Array.from(item.childNodes).filter((child):child is TextNode=>child.nodeType===Node.TEXT_NODE&&!!child.textContent?.trim());
 function hash(value:string) {
@@ -23,6 +23,7 @@ export default function WebsiteContent() {
     const controller=new AbortController();
     let main:WebsiteEdits={};
     let shared:WebsiteEdits={};
+    let previewPhotos:Record<string,string>={};
     let alive=true;
     const records=new Map<HTMLElement,{id:string;original:WebsiteValue;parts:TextNode[];baseline:string[]}>();
     const occurrences=new Map<string,number>();
@@ -39,7 +40,9 @@ export default function WebsiteContent() {
         if(typeof original.href==='string')element.setAttribute('href',typeof update.href==='string'&&websiteUrl(update.href)?update.href:original.href);
         if(typeof original.src==='string'){
           const next=typeof update.src==='string'&&websiteUrl(update.src,true)?update.src:original.src;
-          if(element.getAttribute('src')!==next)element.setAttribute('src',next);
+          const temporary=preview?previewPhotos[next]:undefined;
+          const source=typeof temporary==='string'&&temporary.startsWith('blob:'+location.origin+'/')?temporary:next;
+          if(element.getAttribute('src')!==source)element.setAttribute('src',source);
           element.setAttribute('alt',typeof update.alt==='string'?update.alt:original.alt||'');
         }
         if(update.hidden===true&&!preview)element.setAttribute('data-website-hidden','true');
@@ -73,7 +76,7 @@ export default function WebsiteContent() {
     };
     const receive=(event:MessageEvent)=>{
       if(!preview||event.origin!==window.location.origin||event.source!==window.parent||event.data?.type!=='vcs-preview-apply')return;
-      main=event.data.page||{};shared=event.data.shared||{};scan();
+      main=event.data.page||{};shared=event.data.shared||{};previewPhotos=event.data.photos||{};scan();
     };
     const select=(event:MouseEvent)=>{
       const target=event.target instanceof Element?event.target.closest<HTMLElement>('[data-website-editable]'):null;
