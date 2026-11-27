@@ -1,9 +1,23 @@
-import type { Metadata } from 'next';
+import type {Metadata} from 'next';
 import './globals.css';
 import './operations.css';
 import WebsiteContent from '../components/website-content';
 import {company} from '../lib/company';
-import {ORIGIN} from '../lib/config';
-export const metadata:Metadata={metadataBase:new URL(ORIGIN),title:{default:'VC’s Electrical Depot LTD | More Power, More Performance',template:'%s | VC’s Electrical Depot LTD'},description:company.summary,robots:{index:false,follow:false},icons:{icon:[{url:'/favicon.ico'},{url:'/favicon-32.png',sizes:'32x32',type:'image/png'},{url:'/favicon-48.png',sizes:'48x48',type:'image/png'}],apple:[{url:'/apple-touch-icon.png',sizes:'180x180',type:'image/png'}],shortcut:'/favicon.ico'},manifest:'/site.webmanifest',openGraph:{type:'website',locale:'en_JM',siteName:company.name,title:'VC’s Electrical Depot LTD — More Power, More Performance',description:company.summary,images:[{url:'/opengraph-image',width:1200,height:630,alt:'VC’s Electrical Depot LTD — Electrical supplies & contracting, Jamaica'}]},twitter:{card:'summary_large_image',title:company.displayName,description:company.summary,images:['/opengraph-image']}};
-const schema={'@context':'https://schema.org','@type':'HardwareStore',name:company.name,alternateName:company.tradingName,url:ORIGIN,logo:ORIGIN+'/brand/logo-master.png',image:ORIGIN+'/brand/logo-mark.png',description:company.summary,foundingDate:'2006',telephone:'+1-876-622-9800',email:company.email,address:{'@type':'PostalAddress',streetAddress:'21 Mannings Hill Road',addressLocality:'Kingston 8',addressCountry:'JM'},areaServed:{'@type':'Country',name:'Jamaica'}};
-export default function Layout({children}:{children:React.ReactNode}){return <html lang="en-JM"><body>{children}<WebsiteContent/><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(schema).replace(/</g,'\\u003c')}}/></body></html>}
+import {publicPages,siteOrigin} from '../lib/seo';
+
+export const metadata:Metadata = {
+  metadataBase:new URL(siteOrigin),
+  title:{default:company.displayName,template:'%s | '+company.displayName},
+  description:publicPages.home.description,
+  verification:process.env.GOOGLE_SITE_VERIFICATION ? {google:process.env.GOOGLE_SITE_VERIFICATION} : undefined,
+  icons:{
+    icon:[{url:'/favicon.ico'},{url:'/favicon-48.png',sizes:'48x48',type:'image/png'}],
+    apple:[{url:'/apple-touch-icon.png',sizes:'180x180',type:'image/png'}],
+    shortcut:'/favicon.ico',
+  },
+  manifest:'/site.webmanifest',
+};
+
+export default function Layout({children}:{children:React.ReactNode}) {
+  return <html lang="en-JM"><body>{children}<WebsiteContent/></body></html>;
+}
