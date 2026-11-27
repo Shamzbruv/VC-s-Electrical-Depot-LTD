@@ -5,9 +5,8 @@ import {money,Product} from '../lib/config';
 import {company} from '../lib/company';
 export {Zap,Search,UserRound,ShoppingCart,ChevronDown,ArrowRight,Menu,X,MapPin,Truck,ShieldCheck,PackageCheck,Headphones,Check,Plus,Minus};
 export function Brand({light=false}:{light?:boolean}) {
-  return <a className={'brand brand-official sales-brand '+(light?'light':'')} href="/" aria-label="VC’s Electrical Sales home">
-    <span className="sales-mark"><img src="/brand/logo-mark.webp" alt="" width="76" height="76"/></span>
-    <span className="sales-wordmark"><strong>Electrical</strong><b>Sales</b></span>
+  return <a className={'brand brand-official depot-brand '+(light?'light':'')} href="/" aria-label="VC’s Electrical Depot home">
+    <img className="official-logo" src="/brand/logo-master.webp" alt="VC’s Electrical Depot — Quality Products at Affordable Prices" width="1000" height="560"/>
   </a>;
 }
 export function Header() {
