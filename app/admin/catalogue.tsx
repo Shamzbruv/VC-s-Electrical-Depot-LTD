@@ -21,6 +21,7 @@ export function Products() {
   const [confirm,setConfirm]=useState('');
   const list=useWorkspace<Item[]>('catalog',{q:search,offset});
   const action=useAction();
+  const products=list.data?.filter(item=>!item.sample);
   return <>
     <Panel title={selected?'Edit '+selected.name:'Product catalogue'} note="New and imported products start private. Publish a product when you’re ready to show it on the public catalogue.">
       {selected===undefined?<div className="ops-actions"><button className="ops-primary" onClick={()=>setSelected(null)}>Add product</button><a href="/shop" target="_blank" rel="noreferrer">View public catalogue ↗</a></div>:
@@ -64,10 +65,10 @@ export function Products() {
       {confirm&&<div className="ops-confirm"><p>{confirm==='product_publish_all'?'Publish all real products across the entire catalogue? Existing sample entries stay private.':'Remove every product from the public catalogue?'}</p><div className="ops-actions"><button className="ops-primary" disabled={action.busy} onClick={()=>void action.run(confirm,{},async()=>{setConfirm('');await list.reload();},'Catalogue visibility updated.')}>Confirm</button><button onClick={()=>setConfirm('')}>Cancel</button></div></div>}
       <Feedback message={list.error} failed/>
       {list.data&&<div className="ops-table"><table><thead><tr><th>Product</th><th>Category</th><th>Visibility</th><th>Actions</th></tr></thead><tbody>
-        {list.data.map(item=><tr key={item.id}><td><strong>{item.name}</strong><br/><small>{item.sku}</small></td><td>{item.category}</td><td><Badge value={item.sample?'sample':item.status==='draft'?'private':'public'}/></td>
+        {products?.map(item=><tr key={item.id}><td><strong>{item.name}</strong><br/><small>{item.sku}</small></td><td>{item.category}</td><td><Badge value={item.sample?'sample':item.status==='draft'?'private':'public'}/></td>
           <td className="ops-actions"><button disabled={uploading} onClick={()=>{setSelected(item);window.scrollTo({top:0,behavior:'smooth'});}}>Edit</button>{!item.sample&&<button disabled={action.busy} onClick={()=>void action.run('product_visibility',{id:item.id,public:item.status!=='published'},list.reload,'Product visibility updated.')}>{item.status==='published'?'Make private':'Make public'}</button>}</td></tr>)}
       </tbody></table></div>}
-      {list.data?.length===0&&<p className="ops-empty">No matching products.</p>}
+      {products?.length===0&&<p className="ops-empty">No matching products.</p>}
       <Pager offset={offset} setOffset={setOffset} length={list.data?.length||0}/>
     </Panel>
   </>;
