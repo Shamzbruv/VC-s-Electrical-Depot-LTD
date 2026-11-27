@@ -25,7 +25,7 @@ Deno.serve(async (request:Request)=>{
     if(!access.ok)return reply({error:'Owner permission required.'},403);
     const accounts=await access.json() as {email:string;role:string|null;active:boolean|null;pending:boolean}[];
     const account=accounts.find(item=>item.email.toLowerCase()===email.toLowerCase());
-    if(!account?.active||!account.role||account.role==='owner')return reply({error:'Choose an approved, enabled staff account.'},400);
+    if(!account?.active||!account.role||(account.role==='owner'&&!account.pending))return reply({error:'Choose an approved, enabled staff account.'},400);
     const headers={apikey:service,Authorization:'Bearer '+service,'Content-Type':'application/json'};
     let type=account.pending?'invite':'recovery';
     const generate=()=>fetch(url+'/auth/v1/admin/generate_link',{

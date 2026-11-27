@@ -94,17 +94,17 @@ export function Enquiries() {
 }
 
 type Account={id:string;email:string;role:string|null;active:boolean|null;permissions:Permission[]|null;pending?:boolean};
-const assignable=staffRoles.filter(role=>role!=='owner'&&role!=='order_fulfillment');
+const assignable=staffRoles;
 function AccountForm({account,onSave,busy}:{account?:Account;onSave:(data:object)=>void;busy:boolean}) {
-  const [role,setRole]=useState(account?.role==='order_fulfillment'?'dispatcher':account?.role||'driver');
+  const [role,setRole]=useState(account?.role==='owner'?'owner':'admin');
   const [custom,setCustom]=useState(!!account?.permissions);
   const [scopes,setScopes]=useState<Permission[]>(account?.permissions||defaults[role]||[]);
-  return <form onSubmit={e=>{e.preventDefault();const values=payload(e.currentTarget);onSave({id:account?.id,email:account?.email||values.email,role,active:values.active==='on',permissions:custom?scopes:null});}}>
+  return <form onSubmit={e=>{e.preventDefault();const values=payload(e.currentTarget);onSave({id:account?.id,email:account?.email||values.email,role,active:values.active==='on',permissions:role==='owner'?null:custom?scopes:null});}}>
     {!account&&<Field title="Staff email address"><input type="email" name="email" required maxLength={254}/></Field>}
     <div className="ops-fields"><Field title="Role"><select value={role} onChange={e=>{setRole(e.target.value);if(!custom)setScopes(defaults[e.target.value]);}}>{assignable.map(value=><option key={value} value={value}>{roles[value]}</option>)}</select></Field>
     <label className="ops-check"><input name="active" type="checkbox" defaultChecked={account?.active??true}/>Enable workspace access</label></div>
     <label className="ops-check"><input type="checkbox" checked={custom} onChange={e=>{setCustom(e.target.checked);if(e.target.checked)setScopes(defaults[role]);}}/>Customize these permissions</label>
-    {custom&&<fieldset className="ops-permission"><legend>Workspace permissions</legend>{(Object.keys(permissionLabels) as Permission[]).filter(scope=>scope!=='access').map(scope=><label key={scope} className="ops-check"><input type="checkbox" checked={scopes.includes(scope)} onChange={e=>setScopes(items=>e.target.checked?[...items,scope]:items.filter(item=>item!==scope))}/>{permissionLabels[scope]}</label>)}</fieldset>}
+    {custom&&role!=='owner'&&<fieldset className="ops-permission"><legend>Workspace permissions</legend>{(Object.keys(permissionLabels) as Permission[]).filter(scope=>scope!=='access').map(scope=><label key={scope} className="ops-check"><input type="checkbox" checked={scopes.includes(scope)} onChange={e=>setScopes(items=>e.target.checked?[...items,scope]:items.filter(item=>item!==scope))}/>{permissionLabels[scope]}</label>)}</fieldset>}
     <button className="ops-primary" disabled={busy}>{account?'Save access':'Approve staff email'}</button>
   </form>;
 }
@@ -130,7 +130,7 @@ export function StaffAccess() {
     </Panel>
     <Feedback message={action.message||accounts.error} failed={action.failed||!!accounts.error}/>
     <Feedback message={linkError} failed/>
-    <Panel title="Staff and permissions" note="The owner can set a role template or choose the exact permissions needed for an individual.">
+    <Panel title="Staff and permissions" note="The owner can create an Admin with the workspaces needed for their job. Give the inventory supervisor Delivery supervision access.">
       {accounts.data?.map(account=><article className="ops-list-card" key={account.id||account.email}><div className="ops-list-heading"><div><h3>{account.email}</h3><small>{account.role?roles[account.role]:'Unassigned'}</small></div><Badge value={account.pending?'awaiting_activation':account.active?'enabled':'disabled'}/></div>
         {account.role==='owner'?<p className="ops-muted">Owner access includes all workspaces and staff permissions.</p>:<details><summary>Edit access</summary><AccountForm key={JSON.stringify(account)} account={account} busy={action.busy} onSave={data=>void action.run(account.pending?'access_invite':'access_save',data,accounts.reload,'Access updated.')}/>
           {account.active&&<div className="ops-actions"><button disabled={!!loadingLink} onClick={()=>void createLink(account.email)}>{loadingLink===account.email?'Creating link…':account.pending?'Create one-time setup link':'Create one-time password reset link'}</button></div>}

@@ -10,24 +10,25 @@ const guide:Record<string,[string,string[]]>={
     'Open the sidebar to find the tools assigned to your account. If a workspace is missing, ask the owner to update your permissions.',
     'The overview shows activity for the workspaces you can access. Open a card to follow up on enquiries, manage products, open a draft, review accounting or check deliveries.',
     'Open the bell for staff notifications and mark them read after reviewing them.',
-    'Administrators and owners can open Role preview to explore each role’s workspaces with sample data.',
+    'Owners and admins can open Role preview to explore the two standard portals with sample data.',
   ]],
-  '/admin/finance':['Recording and reviewing finances',[
-    'Choose Income or Expense. Enter the transaction date, amount in Jamaican dollars, category and payment method. Add the customer or supplier, reference and notes to make reconciliation easier.',
-    'Post the entry after checking the amount. If you need to fix an entry, open its status, enter a void reason and post a corrected entry. The original stays visible as voided.',
-    'Set the From and Through dates. With report access, review income, expenses, net activity, daily trends and category totals. Export CSV to download the ledger for the whole period.',
+  '/admin/dispatch':['Preparing and supervising deliveries',[
+    'Enter the customer’s name, email, phone and destination. Copy the order or invoice reference from the accounting system so both teams can identify the same order.',
+    'Add each item, quantity and unit. Check Loaded after the item is in the truck, then save the checklist.',
+    'Select Confirm out for delivery and check the customer email before confirming. This records departure and queues a branded email with the order summary.',
+    'After receiving confirmation from the delivery team, select Confirm arrival. Record who received the goods and confirm. This queues the arrival email.',
+    'Use Report issue for a failed attempt or Cancel delivery if the delivery is called off. The history keeps every recorded change.',
   ]],
-  '/admin/dispatch':['Dispatching and following a package',[
-    'Queue a package with its recipient, phone, destination, delivery date and contents. Add handover instructions or a landmark if needed.',
-    'Choose an active driver from the delivery queue and select Assign driver. The driver sees the package in their workspace and receives an in-app notification.',
-    'After acceptance, use the time and accuracy next to the last location update. If the update is stale, check in with the driver. Open on map shows the most recent point.',
-    'Review Delivery history for status changes. Assign a new driver for an issue, or cancel with a reason when the delivery is called off.',
+  '/admin/automations':['Customer email automation',[
+    'The connection panel shows whether the email service and retry schedule are ready.',
+    'Review the branded email preview for departure and arrival. These examples use sample customer details.',
+    'Every confirmed departure or arrival creates a saved email job. Successful provider acceptance is recorded as sent. The worker retries temporary failures using the same message ID.',
+    'Use Process queued emails to request another pass through the queue. Updates marked Review required need a provider-log check before any further customer contact.',
   ]],
-  '/admin/driver':['Making a delivery',[
-    'Open My deliveries and review the address, recipient number and package instructions.',
-    'Check the location sharing box and select Accept and start delivery. Allow location access when your phone asks.',
-    'Keep this page visible and your phone awake so dispatch can receive updates. Return to the Driver workspace after using your maps app.',
-    'At handover, open Complete delivery or report an issue and choose Mark delivered. To report a failed attempt, enter what happened and choose Report issue. Both actions end tracking.',
+  '/admin/reports':['Operations reports',[
+    'Choose From and Through dates to review deliveries created during that period in Jamaica time.',
+    'Review arrivals, open deliveries, issues and overdue work. Open Deliveries for the individual order summary and event history.',
+    'Export a delivery manifest to compare the existing order references with the accounting system. The export contains up to 1,000 records, so choose a shorter period when needed.',
   ]],
   '/admin/enquiries':['Handling a customer request',[
     'Read the customer’s message and check whether it is a bulk quotation or general enquiry.',
@@ -45,9 +46,9 @@ const guide:Record<string,[string,string[]]>={
     'Update product listings and their visibility in Products. Use this editor for page content.',
   ]],
   '/admin/access':['Setting up staff permissions',[
-    'Enter a staff member’s email, choose a role and decide whether to use the role defaults or customize individual workspaces.',
+    'Enter a staff member’s email, choose Owner or Admin and customize which workspaces an Admin can use. Give the inventory supervisor Delivery supervision.',
     'Choose Approve staff email, then open Edit access and click Create one-time setup link. Copy it and share it privately with the intended staff member.',
-    'Open Edit access to change someone’s permissions or disable access. If a driver loses permission during delivery, dispatch receives an issue to reassign.',
+    'Open Edit access to change an Admin’s permissions or disable their access. Existing owner accounts are protected from changes in this screen.',
   ]],
 };
 

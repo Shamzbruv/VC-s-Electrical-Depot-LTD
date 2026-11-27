@@ -2,7 +2,7 @@
 
 Public electrical supply and contracting site, backed by Supabase. Customers can browse products selected for publication, submit enquiries and request a bulk quotation.
 
-The staff portal is at `/admin`. It includes accounting and JMD reporting, dispatch, a mobile driver workspace, enquiries, private product management, a visual website editor and role-based staff access.
+The staff portal is at `/admin`. It includes supervisor-led deliveries, customer email updates, operational reports, enquiries, private product management, a visual website editor and Owner/Admin access.
 
 ## Deployment
 
@@ -12,7 +12,11 @@ Run the Supabase migrations in order for an uninitialized project. Deploy `vc-st
 
 Bootstrap the first owner using an explicitly confirmed email. Approve the address in `staff_activation` with role `owner` and `active=true`, then generate a one-time invite link from Supabase. If a verified Auth user already exists, assign the `owner` role to its user ID in `staff_roles`. From then on the owner can approve staff and generate one-time links in the portal.
 
-Drivers share location during an accepted delivery while their phone browser can provide updates. Dispatch displays the most recent position and its timestamp. Delivering, cancelling or reporting an issue removes the stored position. Status changes and staff notifications are retained.
+The inventory supervisor works as an Admin with Delivery supervision permission. They copy an existing order reference, enter the customer and item quantities, check loading, release the truck and confirm arrival. The platform keeps an order summary and status history for operational use.
+
+Departure and arrival events create immutable email jobs in the same database transaction. The Edge Function sends branded summaries through Resend. It uses provider idempotency keys, leases, limited retries and a minute-by-minute cron schedule. The interface distinguishes queued, failed, sent-to-provider and review-required states. Old accounting data remains in the database, and the navigation now uses operational reports and manifests.
+
+Run `python scripts/configure-delivery-automation.py` from the repository root with a current management token for this project, a Resend API key and a verified sender address. It applies migration 009 when needed, deploys the Edge Function, stores credentials as Supabase secrets and installs the retry schedule using Vault. The web application displays a setup notice and preserves existing delivery records until the upgrade is installed.
 
 ## Checks
 

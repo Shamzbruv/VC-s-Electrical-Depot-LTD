@@ -3,14 +3,15 @@
 import {useCallback,useEffect,useState,type ReactNode} from 'react';
 import Link,{useLinkStatus} from 'next/link';
 import {useRouter,useSearchParams,useSelectedLayoutSegment} from 'next/navigation';
-import {Bell,Box,ClipboardList,Eye,Globe2,LayoutDashboard,LogOut,Mail,Menu,ShieldCheck,Truck,Wallet,X} from 'lucide-react';
+import {Bell,Box,ClipboardList,Eye,Globe2,LayoutDashboard,LogOut,Mail,Menu,ShieldCheck,Workflow,BarChart3,X} from 'lucide-react';
 import Auth,{authFragment,getSession} from '../../components/auth';
 import {Brand} from '../../components/ui';
 import {canPreviewStaffRoles,ops,roles,staffRoles,type Permission,type Profile,type StaffRole} from '../../lib/ops-client';
 import {Enquiries,Products,StaffAccess} from './catalogue';
-import {Dispatch,Driver} from './delivery';
+import Supervisor from './supervisor';
+import Automations from './automations';
+import Reports from './reports';
 import Editor from './editor';
-import Finance from './finance';
 import Dashboard from './dashboard';
 import {PortalContext,useOps} from './portal-context';
 import {previewProfile,previewRequest} from './role-preview';
@@ -18,9 +19,9 @@ import {dateTime,Feedback,useWorkspace} from './workspace';
 
 const sections=[
   {path:'overview',title:'Overview',icon:LayoutDashboard},
-  {path:'finance',title:'Accounting',icon:Wallet,scopes:['finance','finance_reports']},
-  {path:'dispatch',title:'Dispatch',icon:ClipboardList,scopes:['dispatch']},
-  {path:'driver',title:'Driver workspace',icon:Truck,scopes:['drive']},
+  {path:'dispatch',title:'Deliveries',icon:ClipboardList,scopes:['dispatch']},
+  {path:'automations',title:'Automations',icon:Workflow,scopes:['dispatch']},
+  {path:'reports',title:'Operations reports',icon:BarChart3,scopes:['reports','dispatch']},
   {path:'enquiries',title:'Enquiries',icon:Mail,scopes:['leads']},
   {path:'products',title:'Products',icon:Box,scopes:['catalog']},
   {path:'website',title:'Website editor',icon:Globe2,scopes:['website']},
@@ -32,9 +33,9 @@ const livePortal={request:ops,preview:false};
 const samplePortal={request:previewRequest,preview:true};
 const taglines:Record<string,string>={
   overview:'See what needs attention across your staff workspaces.',
-  finance:'Record income and expenses, reconcile the daily ledger and review financial activity.',
-  dispatch:'Queue packages, assign drivers and follow deliveries as they progress.',
-  driver:'Accept your packages, share your position in transit and log each handover.',
+  dispatch:'Prepare orders, check loading, release deliveries and confirm arrival for each customer.',
+  automations:'Review customer updates, preview the emails and follow the sending queue.',
+  reports:'Review delivery activity and export references for the existing accounting workflow.',
   enquiries:'Manage general enquiries and bulk quote requests from the public website.',
   products:'Build the private catalogue and choose which products appear on the public site.',
   website:'Edit the public site using a live preview and publish when the draft is ready.',
@@ -117,8 +118,8 @@ export default function Admin({children}:{children:ReactNode}) {
         <button className="ops-menu" aria-label="Toggle staff navigation" aria-expanded={drawer} onClick={()=>setDrawer(!drawer)}>{drawer?<X size={20}/>:<Menu size={20}/>}</button>
         <div className="ops-account"><strong>{roles[displayedProfile.role]||displayedProfile.role}</strong><small>{displayedProfile.email}</small></div>
         <div className="ops-actions">
-          {canPreview&&!previewRole&&<Link className="ops-preview-link" href={previewPath('overview','driver')} aria-label="Role preview" title="Role preview"><Eye size={18}/><span>Role preview</span></Link>}
-          <Notifications key={previewRole||'live'} deliveriesLink={can('dispatch')?href('dispatch'):can('drive')?href('driver'):undefined}/>
+          {canPreview&&!previewRole&&<Link className="ops-preview-link" href={previewPath('overview','admin')} aria-label="Role preview" title="Role preview"><Eye size={18}/><span>Role preview</span></Link>}
+          <Notifications key={previewRole||'live'} deliveriesLink={can('dispatch')?href('dispatch'):undefined}/>
           {!previewRole&&<button aria-label="Sign out" onClick={()=>{sessionStorage.removeItem('vc-session');setProfile(undefined);}}><LogOut size={18}/><span>Sign out</span></button>}
         </div>
       </header>
@@ -134,9 +135,9 @@ export default function Admin({children}:{children:ReactNode}) {
         {!current&&<Link href={href('overview')}>← Return to the overview</Link>}
         <div className="ops-workspace" key={section+':'+(previewRole||'live')}>
           {current&&section==='overview'&&<Dashboard href={href} permissions={displayedProfile.permissions||[]}/>}
-          {current&&section==='finance'&&<Finance canEnter={can('finance')} canReport={can('finance_reports')} actor={displayedProfile.id}/>}
-          {current&&section==='dispatch'&&<Dispatch/>}
-          {current&&section==='driver'&&<Driver/>}
+          {current&&section==='reports'&&<Reports/>}
+          {current&&section==='automations'&&<Automations/>}
+          {current&&section==='dispatch'&&<Supervisor/>}
           {current&&section==='enquiries'&&<Enquiries/>}
           {current&&section==='products'&&<Products/>}
           {current&&section==='website'&&<Editor/>}

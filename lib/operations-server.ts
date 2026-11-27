@@ -1,6 +1,11 @@
 import {SB_URL} from './config';
 import {secret} from './server';
 
+export class SupabaseFailure extends Error {
+  constructor(message:string,public status:number,public code?:string){super(message);}
+}
+export const missingRpc=(error:unknown)=>error instanceof SupabaseFailure&&['PGRST202','42883'].includes(error.code||'');
+
 export function response(value: unknown, status=200) {
   return Response.json(value, {status,headers:{'Cache-Control':'no-store'}});
 }
@@ -33,10 +38,10 @@ export async function supabase<T=unknown>(path: string, {token,body,method}: {to
   if (!result.ok) {
     const code=data.code||data.error_code;
     const message=data.message||data.msg||data.error_description||data.error;
-    if (code==='23505') throw Error('That SKU or URL slug is already in use.');
-    if (result.status===401||code==='PGRST301') throw Error('Your session expired. Please sign in again.');
-    if (code==='P0001'||(path.startsWith('/auth/')||path.startsWith('/functions/'))) throw Error(message||'Unable to complete this request.');
-    throw Error('Unable to complete this request. Check the details and try again.');
+    if (code==='23505') throw new SupabaseFailure('That SKU or URL slug is already in use.',result.status,code);
+    if (result.status===401||code==='PGRST301') throw new SupabaseFailure('Your session expired. Please sign in again.',401,code);
+    if (code==='P0001'||(path.startsWith('/auth/')||path.startsWith('/functions/'))) throw new SupabaseFailure(message||'Unable to complete this request.',result.status,code);
+    throw new SupabaseFailure('Unable to complete this request. Check the details and try again.',result.status,code);
   }
   return data as T;
 }
